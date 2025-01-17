@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "AdpgApp",
-    "slug": "AdpgApp",
+    "slug": "adpg",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,8 +37,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "83d2d9c7-ae39-42f4-9975-d64cba1829c4"
+        "projectId": "582299c8-5d03-42b7-8cf3-e5f8010d7bed"
+      },
+      "router": {
+        "origin": false
       }
-    }
+    },
+    "owner": "pedroteles"
   }
 }
