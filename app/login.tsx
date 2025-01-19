@@ -67,37 +67,7 @@ export default function LoginScreen() {
                     <Text style={styles.continueButtonText}>Entrar</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.orText}>ou</Text>
-
-                <TouchableOpacity style={styles.socialButton}>
-                    <Image
-                        source={{ uri: 'https://cdn.cdnlogo.com/logos/f/91/facebook-icon.svg' }}
-                        style={styles.socialIcon}
-                    />
-                    <Text style={styles.socialButtonText}>Continue com Facebook</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.socialButton}>
-                    <Image
-                        source={{ uri: 'https://cdn.cdnlogo.com/logos/g/35/google-icon.svg' }}
-                        style={styles.socialIcon}
-                    />
-                    <Text style={styles.socialButtonText}>Continue com Google</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.socialButton}>
-                    <Image
-                        source={{ uri: 'https://cdn.cdnlogo.com/logos/a/12/apple.svg' }}
-                        style={styles.socialIcon}
-                    />
-                    <Text style={styles.socialButtonText}>Continue com Apple</Text>
-                </TouchableOpacity>
-
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        Não possui uma conta?{' '}
-                        <Text style={styles.footerLink}>Registrar</Text>
-                    </Text>
                     <TouchableOpacity>
                         <Text style={styles.forgotPassword}>Esqueceu sua senha?</Text>
                     </TouchableOpacity>

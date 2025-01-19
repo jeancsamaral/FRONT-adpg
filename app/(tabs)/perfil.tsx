@@ -102,6 +102,18 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={24} color="#000" />
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => router.push('/(tabs)/usuarios')}
+          >
+            <Ionicons name="people-outline" size={24} color="#333" />
+            <View style={styles.menuItemText}>
+              <Text style={styles.menuTitle}>Gerenciar Usuários</Text>
+              <Text style={styles.menuSubtitle}>Adicionar e gerenciar usuários do sistema</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#666" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.menuItem} onPress={() => router.replace('/login')}>
             <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
             <View style={styles.menuItemText}>

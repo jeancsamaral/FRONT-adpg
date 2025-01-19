@@ -1,296 +1,236 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
-import { Image } from 'react-native';
-import groupIcon from '@/assets/images/group.png';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { userService } from '../services/userService';
-import { User } from '../types/index';
+import { UserForm } from '../components/UserForm';
+import { User } from '../types';
+
+// Dados de exemplo
+const usersData = [
+  {
+    id: 1,
+    codusr: 1,
+    nome: 'Administrador',
+    supervisor: 'Admin',
+    inativo: 'N',
+    excluido: 'N',
+    registro: 1,
+  },
+  {
+    id: 2,
+    codusr: 2,
+    nome: 'João Silva',
+    supervisor: 'Administrador',
+    inativo: 'N',
+    excluido: 'N',
+    registro: 2,
+  },
+];
 
 export default function UsuariosScreen() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [users, setUsers] = useState(usersData);
   const [isEditing, setIsEditing] = useState(false);
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const data = await userService.getUsers(page);
-      setUsers(data.users);
-    } catch (err) {
-      setError('Erro ao carregar usuários');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const handleCreateUser = async (userData: Partial<User>) => {
-    try {
-      setLoading(true);
-      await userService.createUser(userData);
-      loadUsers(); // Recarrega a lista
-    } catch (err) {
-      setError('Erro ao criar usuário');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    // Aqui você implementaria a lógica para criar um usuário
+    console.log('Criar usuário:', userData);
+    setIsEditing(false);
   };
 
-  const handleUpdateUser = async (id: number, userData: Partial<User>) => {
-    try {
-      setLoading(true);
-      await userService.updateUser(id, userData);
-      loadUsers(); // Recarrega a lista
-      setIsEditing(false);
-      setSelectedUser(null);
-    } catch (err) {
-      setError('Erro ao atualizar usuário');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const handleUpdateUser = async (userData: Partial<User>) => {
+    // Aqui você implementaria a lógica para atualizar um usuário
+    console.log('Atualizar usuário:', userData);
+    setIsEditing(false);
+    setSelectedUser(null);
   };
 
-  const handleDeleteUser = async (id: number) => {
-    try {
-      setLoading(true);
-      await userService.deleteUser(id);
-      loadUsers(); // Recarrega a lista
-    } catch (err) {
-      setError('Erro ao deletar usuário');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteUser = async (userId: number) => {
+    // Aqui você implementaria a lógica para deletar um usuário
+    console.log('Deletar usuário:', userId);
   };
-
-  if (loading) {
-    return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#0a7ea4" />
-      </ThemedView>
-    );
-  }
-
-  if (error) {
-    return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <ThemedText style={styles.errorText}>{error}</ThemedText>
-      </ThemedView>
-    );
-  }
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedView style={styles.headerMain}>
-        <Image source={groupIcon} style={styles.icon} />
-        <ThemedText style={styles.title}>Usuários</ThemedText>
-      </ThemedView>
-
-      <ThemedView style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.createButton} onPress={() => {/* Adicione sua função aqui */}}>
-          <Ionicons name="add-outline" size={20} color="white" />
-          <ThemedText style={styles.buttonText}>Criar Usuário</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={['#229dc9', '#1a7fa3']}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <MaterialCommunityIcons name="account-cog" size={32} color="#fff" />
+            <ThemedText style={styles.title}>Gerenciar Usuários</ThemedText>
+          </View>
+        </View>
+      </LinearGradient>
 
       <ScrollView style={styles.scrollContainer}>
-        <ThemedView style={styles.table}>
-          {users.map((item, index) => (
-            <ThemedView key={index} style={styles.tableRow}>
-              <ThemedView style={styles.cell}>
-                <ThemedText style={styles.label}>Usuário</ThemedText>
-                <ThemedText style={styles.value}>{item.nome}</ThemedText>
+        <ThemedView style={styles.contentContainer}>
+          {!isEditing ? (
+            <>
+              <TouchableOpacity 
+                style={styles.createButton}
+                onPress={() => setIsEditing(true)}
+              >
+                <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
+                <ThemedText style={styles.buttonText}>Novo Usuário</ThemedText>
+              </TouchableOpacity>
+
+              <ThemedView style={styles.table}>
+                {users.map((item) => (
+                  <ThemedView key={item.id} style={styles.tableRow}>
+                    <ThemedView style={styles.rowHeader}>
+                      <ThemedText style={styles.codigo}>{item.codusr}</ThemedText>
+                      <ThemedText style={styles.nome}>{item.nome}</ThemedText>
+                    </ThemedView>
+
+                    <ThemedView style={styles.rowContent}>
+                      <ThemedView style={styles.cell}>
+                        <ThemedText style={styles.label}>Supervisor</ThemedText>
+                        <ThemedText style={styles.value}>{item.supervisor}</ThemedText>
+                      </ThemedView>
+                      <ThemedView style={styles.cell}>
+                        <ThemedText style={styles.label}>Status</ThemedText>
+                        <ThemedText style={styles.value}>
+                          {item.inativo === 'N' ? 'Ativo' : 'Inativo'}
+                        </ThemedText>
+                      </ThemedView>
+                    </ThemedView>
+
+                    <ThemedView style={styles.actionIcons}>
+                      <TouchableOpacity onPress={() => {
+                        setSelectedUser(item);
+                        setIsEditing(true);
+                      }}>
+                        <Ionicons name="create-outline" size={20} color="#075eec" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteUser(item.id)}>
+                        <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                      </TouchableOpacity>
+                    </ThemedView>
+                  </ThemedView>
+                ))}
               </ThemedView>
-              <ThemedView style={styles.cell}>
-                <ThemedText style={styles.label}>Login</ThemedText>
-                <ThemedText style={styles.value}>{item.codusr}</ThemedText>
-              </ThemedView>
-              <ThemedView style={styles.cell}>
-                <ThemedText style={styles.label}>Dt. Inclusão</ThemedText>
-                <ThemedText style={styles.value}>{item.registro}</ThemedText>
-              </ThemedView>
-              <ThemedView style={styles.cell}>
-                <ThemedText style={styles.label}>Status</ThemedText>
-                <ThemedText style={[
-                  styles.value,
-                  item.inativo === 'N' ? styles.statusAtivo : styles.statusInativo
-                ]}>
-                  {item.inativo === 'N' ? 'Ativo' : 'Inativo'}
-                </ThemedText>
-              </ThemedView>
-              <ThemedView style={styles.cellLast}>
-                <ThemedText style={styles.label}>Ações</ThemedText>
-                <ThemedView style={styles.actionIcons}>
-                  <TouchableOpacity onPress={() => {
-                    setSelectedUser(item);
-                    setIsEditing(true);
-                  }}>
-                    <Ionicons name="create-outline" size={20} color="#075eec" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDeleteUser(item.id)}>
-                    <Ionicons name="trash-outline" size={20} color="#dc2626" />
-                  </TouchableOpacity>
-                </ThemedView>
-              </ThemedView>
-            </ThemedView>
-          ))}
+            </>
+          ) : (
+            <UserForm
+              user={selectedUser}
+              onSubmit={selectedUser ? handleUpdateUser : handleCreateUser}
+              onCancel={() => {
+                setIsEditing(false);
+                setSelectedUser(null);
+              }}
+            />
+          )}
         </ThemedView>
       </ScrollView>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    marginTop: 60,
-    backgroundColor: 'white',
+    backgroundColor: '#f5f5f5',
+    paddingBottom: 60,
   },
-
-  headerMain: {
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#c9c9c9',
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    marginTop: 40,
-    paddingRight: 20,
-    flexWrap: 'wrap',
   },
-
-  icon: {
-    width: 35,
-    height: 35,
-  },
-
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
-    flex: 1,
+    color: '#fff',
   },
-
-  buttonContainer: {
-    marginBottom: 20,
-    backgroundColor:'white'
-  },
-
-  createButton: {
-    backgroundColor: '#0a7ea4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 4,
-    gap: 8,
-    width: 'auto',
-    alignSelf: 'flex-start',
-  },
-
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontFamily: 'Poppins-Medium',
-  },
-
   scrollContainer: {
     flex: 1,
   },
-
+  contentContainer: {
+    padding: 20,
+  },
+  createButton: {
+    backgroundColor: '#229dc9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    alignSelf: 'flex-start',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    marginLeft: 8,
+  },
   table: {
     gap: 16,
-    backgroundColor: 'white',
-    paddingBottom: 20,
   },
-
   tableRow: {
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 4,
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-
+  rowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  codigo: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#229dc9',
+  },
+  nome: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+    marginLeft: 8,
+  },
+  rowContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   cell: {
+    flex: 1,
     marginBottom: 8,
-    backgroundColor: '#F5F5F5',
-    borderBottomColor: '#c9c9c9',
-    borderBottomWidth: 0.5,
-    paddingBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
-
-  cellLast: {
-    marginBottom: 8,
-    backgroundColor: '#F5F5F5',
-    borderBottomColor: '#c9c9c9',
-    borderBottomWidth: 0,
-    paddingBottom: 5,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
   label: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 2,
   },
-
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 20,
-    backgroundColor: '#F5F5F5',
+  value: {
+    fontSize: 14,
+    color: '#333',
   },
-
   actionIcons: {
     flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
     justifyContent: 'flex-end',
+    gap: 20,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
   },
-
-  value: {
-    color: '#000',
-    fontSize: 14,
-  },
-
-  statusAtivo: {
-    color: '#008000', // verde
-    fontWeight: '500',
-  },
-
-  statusInativo: {
-    color: '#FF0000', // vermelho
-    fontWeight: '500',
-  },
-
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 16,
-  }
 });

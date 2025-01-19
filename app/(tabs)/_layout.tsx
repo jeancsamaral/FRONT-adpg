@@ -50,13 +50,23 @@ export default function Layout() {
             />
           </TouchableOpacity>
           <TouchableOpacity 
+            style={[styles.navItem, isActive('/(tabs)/arquivos') && styles.activeNavItem]}
+            onPress={() => router.push('/(tabs)/arquivos')}
+          >
+            <Ionicons 
+              name="folder-outline" 
+              size={24} 
+              color={isActive('/(tabs)/arquivos') ? "#007AFF" : "#000"} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
             style={[styles.navItem, isActive('/(tabs)/perfil') && styles.activeNavItem]}
             onPress={() => router.push('/(tabs)/perfil')}
           >
             <Ionicons 
               name="settings-outline" 
               size={24} 
-              color={isActive('/(tabs)/perfil') ? "#007AFF" : "#000"} 
+              color={isActive('/(tabs)/info') ? "#007AFF" : "#000"} 
             />
           </TouchableOpacity>
         </View>

@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    paddingBottom: 60,
   },
   headerGradient: {
     paddingTop: 60,
@@ -157,6 +158,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+    paddingBottom: 20,
   },
   contentContainer: {
     padding: 20,
