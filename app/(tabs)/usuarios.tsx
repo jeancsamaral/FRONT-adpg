@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
@@ -50,6 +50,28 @@ export default function UsuariosScreen() {
   const handleDeleteUser = async (userId: number) => {
     // Aqui você implementaria a lógica para deletar um usuário
     console.log('Deletar usuário:', userId);
+  };
+
+  const handleDeleteClient = (clientToDelete: any) => {
+    Alert.alert(
+      "Confirmar Exclusão",
+      `Deseja realmente excluir o cliente ${clientToDelete.razaoSocial}?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Excluir",
+          style: 'destructive',
+          onPress: () => {
+            // Aqui você implementaria a chamada à API para excluir o cliente
+            // Por enquanto, vamos apenas remover do estado local
+            setUsers(users.filter(user => user.id !== clientToDelete.id));
+          }
+        }
+      ]
+    );
   };
 
   return (

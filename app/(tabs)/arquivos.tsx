@@ -118,12 +118,6 @@ export default function ArquivosScreen() {
                   <TouchableOpacity>
                     <MaterialCommunityIcons name="download" size={20} color="#229dc9" />
                   </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="share-variant" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="delete" size={20} color="#dc2626" />
-                  </TouchableOpacity>
                 </View>
               </ThemedView>
             ))}
