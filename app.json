@@ -1,12 +1,14 @@
 {
   "expo": {
-    "name": "AdpgApp",
-    "slug": "AdpgApp",
+    "name": "EDPG",
+    "slug": "edpg",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "edpg",
     "userInterfaceStyle": "automatic",
+
+
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -14,14 +16,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jeancsamaral.AdpgApp"
+      "bundleIdentifier": "com.brunopimentelff.EDPG"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jeancsamaral.AdpgApp"
+      "package": "com.brunopimentelff.EDPG"
     },
     "web": {
       "bundler": "metro",
@@ -37,7 +39,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "83d2d9c7-ae39-42f4-9975-d64cba1829c4"
+        "projectId": "94da5d64-09f6-4d8c-8332-e1f80ca6faea"
       }
     }
   }
