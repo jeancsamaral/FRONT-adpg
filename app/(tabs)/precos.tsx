@@ -1,4 +1,7 @@
-import { StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { Image } from 'react-native';
@@ -97,195 +100,244 @@ const precosData = [
 
 export default function PrecosScreen() {
     return (
-        <ThemedView style={styles.container}>
-            <ThemedView style={styles.headerMain}>
-                <Image source={priceIcon} style={styles.icon} />
-                <ThemedText style={styles.title}>Preços por Região</ThemedText>
-            </ThemedView>
+        <SafeAreaView style={styles.container}>
+            <LinearGradient
+                colors={['#229dc9', '#1a7fa3']}
+                style={styles.headerGradient}
+            >
+                <View style={styles.header}>
+                    <View style={styles.headerContent}>
+                        <MaterialCommunityIcons name="cash-multiple" size={32} color="#fff" />
+                        <ThemedText style={styles.title}>Preços por Região</ThemedText>
+                    </View>
+                    <TouchableOpacity style={styles.profileButton}>
+                        <MaterialCommunityIcons name="account-circle" size={32} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            </LinearGradient>
+
             <ScrollView style={styles.scrollContainer}>
-                <ThemedView style={styles.icmsContainer}>
-                    <ThemedText style={styles.icmsTitle}>Regiões ICMS</ThemedText>
-                    {regioesICMS.map((regiao, index) => (
-                        <ThemedView key={index} style={styles.icmsRow}>
-                            <ThemedText style={[styles.icmsAliquota, { color: '#FF0000' }]}>{regiao.aliquota}</ThemedText>
-                            <ThemedText style={styles.icmsUF}>{regiao.uf}</ThemedText>
-                        </ThemedView>
-                    ))}
-                </ThemedView>
+                <ThemedView style={styles.contentContainer}>
+                    <TouchableOpacity style={styles.createButton}>
+                        <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
+                        <ThemedText style={styles.buttonText}>Nova Tabela de Preço</ThemedText>
+                    </TouchableOpacity>
 
-                <ThemedView style={styles.filterContainer}>
-                    <ThemedText style={styles.filterText}>
-                        <Image source={filterIcon} style={styles.iconSmall} /> Filtro
-                    </ThemedText>
-                    <ThemedText style={styles.filterSubtext}>
-                        (Clique aqui para expandir/esconder os campos de filtro)
-                    </ThemedText>
-                </ThemedView>
+                    <ThemedView style={styles.icmsContainer}>
+                        <ThemedText style={styles.sectionTitle}>Regiões ICMS</ThemedText>
+                        {regioesICMS.map((regiao, index) => (
+                            <ThemedView key={index} style={styles.icmsRow}>
+                                <ThemedText style={styles.icmsAliquota}>{regiao.aliquota}</ThemedText>
+                                <ThemedText style={styles.icmsUF}>{regiao.uf}</ThemedText>
+                            </ThemedView>
+                        ))}
+                    </ThemedView>
 
+                    <ThemedView style={styles.filterContainer}>
+                        <ThemedText style={styles.filterText}>
+                            <Image source={filterIcon} style={styles.iconSmall} /> Filtro
+                        </ThemedText>
+                        <ThemedText style={styles.filterSubtext}>
+                            (Clique aqui para expandir/esconder os campos de filtro)
+                        </ThemedText>
+                    </ThemedView>
 
-                <ThemedView style={styles.table}>
-                    {precosData.map((item, index) => (
-                        <ThemedView key={index} style={styles.tableRow}>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>Código</ThemedText>
-                                <ThemedText style={styles.value}>{item.codigo}</ThemedText>
+                    <ThemedView style={styles.table}>
+                        {precosData.map((item, index) => (
+                            <ThemedView key={index} style={styles.tableRow}>
+                                <View style={styles.rowHeader}>
+                                    <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
+                                    <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
+                                </View>
+
+                                <View style={styles.rowContent}>
+                                    <View style={styles.column}>
+                                        <View style={styles.cell}>
+                                            <ThemedText style={styles.label}>ST</ThemedText>
+                                            <ThemedText style={styles.value}>{item.st}</ThemedText>
+                                        </View>
+                                        <View style={styles.cell}>
+                                            <ThemedText style={styles.label}>IPI %</ThemedText>
+                                            <ThemedText style={styles.value}>{item.ipi}</ThemedText>
+                                        </View>
+                                    </View>
+                                    <View style={styles.column}>
+                                        <View style={styles.cell}>
+                                            <ThemedText style={styles.label}>Moeda</ThemedText>
+                                            <ThemedText style={styles.value}>{item.moeda}</ThemedText>
+                                        </View>
+                                        <View style={styles.cell}>
+                                            <ThemedText style={styles.label}>Preço Compra</ThemedText>
+                                            <ThemedText style={styles.value}>{item.precoCompra}</ThemedText>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.mcContainer}>
+                                    <View style={styles.mcSection}>
+                                        <ThemedText style={styles.mcTitle}>ICMS 18%</ThemedText>
+                                        <View style={styles.mcRow}>
+                                            <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc1_18}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc2_18}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc3_18}</ThemedText>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.mcSection}>
+                                        <ThemedText style={styles.mcTitle}>ICMS 12%</ThemedText>
+                                        <View style={styles.mcRow}>
+                                            <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc1_12}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc2_12}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc3_12}</ThemedText>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.mcSection}>
+                                        <ThemedText style={styles.mcTitle}>ICMS 7%</ThemedText>
+                                        <View style={styles.mcRow}>
+                                            <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc1_7}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc2_7}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc3_7}</ThemedText>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.mcSection}>
+                                        <ThemedText style={styles.mcTitle}>ICMS 4%</ThemedText>
+                                        <View style={styles.mcRow}>
+                                            <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc1_4}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc2_4}</ThemedText>
+                                            <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{item.mc3_4}</ThemedText>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.actionIcons}>
+                                    <TouchableOpacity>
+                                        <MaterialCommunityIcons name="pencil" size={20} color="#229dc9" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity>
+                                        <MaterialCommunityIcons name="delete" size={20} color="#229dc9" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity>
+                                        <MaterialCommunityIcons name="content-copy" size={20} color="#229dc9" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity>
+                                        <MaterialCommunityIcons name="file-document" size={20} color="#229dc9" />
+                                    </TouchableOpacity>
+                                </View>
                             </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>Descrição</ThemedText>
-                                <ThemedText style={styles.value}>{item.descricao}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>ST</ThemedText>
-                                <ThemedText style={styles.value}>{item.st}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>IPI %</ThemedText>
-                                <ThemedText style={styles.value}>{item.ipi}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>Moeda</ThemedText>
-                                <ThemedText style={styles.value}>{item.moeda}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>Preço Compra</ThemedText>
-                                <ThemedText style={styles.value}>{item.precoCompra}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC1 18%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc1_18}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC2 18%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc2_18}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC3 18%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc3_18}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC1 12%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc1_12}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC2 12%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc2_12}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC3 12%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc3_12}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC1 7%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc1_7}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC2 7%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc2_7}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC3 7%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc3_7}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC1 4%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc1_4}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cell}>
-                                <ThemedText style={styles.label}>MC2 4%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc2_4}</ThemedText>
-                            </ThemedView>
-                            <ThemedView style={styles.cellLast}>
-                                <ThemedText style={styles.label}>MC3 4%</ThemedText>
-                                <ThemedText style={styles.value}>{item.mc3_4}</ThemedText>
-                            </ThemedView>
-                        </ThemedView>
-                    ))}
+                        ))}
+                    </ThemedView>
                 </ThemedView>
             </ScrollView>
-        </ThemedView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
-        marginTop: 60,
-        backgroundColor: 'white',
+        backgroundColor: '#f5f5f5',
+        paddingBottom: 60,
     },
-
-    headerMain: {
+    headerGradient: {
+        paddingTop: 60,
+        paddingBottom: 30,
+        paddingHorizontal: 20,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        marginBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#c9c9c9',
-        paddingBottom: 20,
-        backgroundColor: 'white',
-        marginTop: 40,
-        paddingRight: 20,
-        flexWrap: 'wrap',
     },
-
-    icon: {
-        width: 35,
-        height: 35,
-    },
-
-    iconSmall: {
-        width: 20,
-        height: 20,
-    },
-
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#000',
+        color: '#fff',
+    },
+    profileButton: {
+        padding: 8,
+    },
+    scrollContainer: {
         flex: 1,
     },
-
+    contentContainer: {
+        padding: 20,
+    },
+    createButton: {
+        backgroundColor: '#229dc9',
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 20,
+        alignSelf: 'flex-start',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        marginLeft: 8,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 12,
+        color: '#333',
+    },
     icmsContainer: {
         backgroundColor: '#fff',
-        borderRadius: 4,
         padding: 16,
+        borderRadius: 12,
         marginBottom: 20,
-        borderWidth: 1,
-        borderColor: '#eee',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
-
-    icmsTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 12,
-        color: '#000',
-    },
-
     icmsRow: {
         flexDirection: 'row',
-        marginBottom: 8,
         alignItems: 'center',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
     },
-
     icmsAliquota: {
-        width: 40,
+        width: 50,
         fontSize: 14,
         fontWeight: '500',
+        color: '#FF0000',
     },
-
     icmsUF: {
+        flex: 1,
         fontSize: 14,
         color: '#666',
-        flex: 1,
     },
-
     filterContainer: {
         padding: 12,
         backgroundColor: '#f5f5f5',
         borderRadius: 4,
         marginBottom: 20,
     },
-
     filterText: {
         fontSize: 16,
         fontWeight: '600',
@@ -297,61 +349,99 @@ const styles = StyleSheet.create({
         alignContent: 'center',
         color: '#000',
     },
-
     filterSubtext: {
         fontSize: 12,
         color: '#666',
     },
-
-    scrollContainer: {
-        flex: 1,
+    iconSmall: {
+        width: 20,
+        height: 20,
     },
-
     table: {
         gap: 16,
-        backgroundColor: 'white',
-        paddingBottom: 20,
     },
-
     tableRow: {
-        backgroundColor: '#f5f5f5',
-        padding: 12,
-        borderRadius: 4,
-        shadowColor: 'black',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 3,
-        elevation: 2,
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
-
+    rowHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    codigo: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#229dc9',
+    },
+    descricao: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        flex: 1,
+        marginLeft: 8,
+    },
+    rowContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    column: {
+        flex: 1,
+    },
     cell: {
         marginBottom: 8,
-        backgroundColor: '#F5F5F5',
-        borderBottomColor: '#c9c9c9',
-        borderBottomWidth: 0.5,
-        paddingBottom: 10,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
     },
-
-    cellLast: {
-        marginBottom: 8,
-        backgroundColor: '#F5F5F5',
-        borderBottomColor: '#c9c9c9',
-        borderBottomWidth: 0,
-        paddingBottom: 5,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-
     label: {
         fontSize: 12,
         color: '#666',
-        marginBottom: 2,
     },
-
     value: {
-        color: '#000',
         fontSize: 14,
+        color: '#333',
+    },
+    actionIcons: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    mcContainer: {
+        marginTop: 16,
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 12,
+    },
+    mcSection: {
+        marginBottom: 12,
+    },
+    mcTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#229dc9',
+        marginBottom: 4,
+    },
+    mcRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 8,
+    },
+    mcLabel: {
+        fontSize: 12,
+        color: '#666',
+    },
+    mcValue: {
+        fontSize: 14,
+        color: '#333',
+        fontWeight: '500',
+        marginRight: 12,
     },
 }); 

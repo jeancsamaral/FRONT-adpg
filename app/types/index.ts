@@ -2,6 +2,8 @@ export interface User {
   id: number;
   codusr: number;
   nome: string;
+  login: string;
+  senha?: string;
   supervisor: string;
   inativo: string;
   codven?: string;

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
@@ -19,8 +20,8 @@ export default function HomeScreen() {
   const quickActions = [
     { icon: 'account-group', title: 'Clientes', count: '143', route: '/(tabs)/clientes' },
     { icon: 'package-variant', title: 'Produtos', count: '567', route: '/(tabs)/estoque' },
-    { icon: 'chart-line', title: 'Vendas', count: '32', route: '/(tabs)/vendas' },
-    { icon: 'cog', title: 'Configurações', route: '/(tabs)/perfil' },
+    { icon: 'chart-line', title: 'Estoque', count: '32', route: '/(tabs)/estoque' },
+    { icon: 'cash-multiple', title: 'Preços', route: '/(tabs)/precos', count: '10' },
   ];
 
   return (
@@ -70,59 +71,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
-
-        {/* Recent Activity */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Atividades Recentes</Text>
-          <TouchableOpacity 
-            style={styles.activityCard}
-            onPress={() => router.push('/(tabs)/')}
-          >
-            <MaterialCommunityIcons name="clock-outline" size={20} color="#229dc9" />
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>Nova venda registrada</Text>
-              <Text style={styles.activityTime}>Há 5 minutos</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.activityCard}
-            onPress={() => router.push('/(tabs)/clientes')}
-          >
-            <MaterialCommunityIcons name="account-plus" size={20} color="#229dc9" />
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>Cliente adicionado</Text>
-              <Text style={styles.activityTime}>Há 2 horas</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Ações Rápidas</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => router.push('/(tabs)/')}
-            >
-              <MaterialCommunityIcons name="plus-circle" size={24} color="#229dc9" />
-              <Text style={styles.actionButtonText}>Nova Venda</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => router.push('/(tabs)/clientes')}
-            >
-              <MaterialCommunityIcons name="account-plus" size={24} color="#229dc9" />
-              <Text style={styles.actionButtonText}>Novo Cliente</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => router.push('/(tabs)/estoque')}
-            >
-              <MaterialCommunityIcons name="cube-outline" size={24} color="#229dc9" />
-              <Text style={styles.actionButtonText}>Novo Produto</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -132,6 +80,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    paddingBottom: 60,
   },
   headerGradient: {
     paddingTop: 60,
@@ -159,14 +108,14 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 15,
+    width: '100%',
+    paddingHorizontal: 16,
+    gap: 10,
     marginTop: -30,
   },
   statCard: {
-    width: (width - 50) / 2,
-    margin: 5,
+    width: '100%',
+    marginBottom: 8,
     borderRadius: 15,
     overflow: 'hidden',
   },

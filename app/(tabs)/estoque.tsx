@@ -1,12 +1,13 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
+import { useRouter } from 'expo-router';
 
 // Dados de exemplo
-const inventoryData = [
+const productData = [
   {
     codigo: 'PA00001',
     descricao: 'IRGASURF SR 100',
@@ -32,6 +33,60 @@ const inventoryData = [
 ];
 
 export default function EstoqueScreen() {
+  const router = useRouter();
+  const [products, setProducts] = useState(productData);
+
+  const handleProductPress = (product: any) => {
+    router.push({
+      pathname: '/produto-detalhes',
+      params: product
+    });
+  };
+
+  const handleEditProduct = (product: any) => {
+    router.push({
+      pathname: '/produto-form',
+      params: { ...product, isEditing: true }
+    });
+  };
+
+  const handleDeleteProduct = (productToDelete: any) => {
+    Alert.alert(
+      "Confirmar Exclusão",
+      `Deseja realmente excluir o produto ${productToDelete.descricao}?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Excluir",
+          style: 'destructive',
+          onPress: () => {
+            setProducts(products.filter(product => product.codigo !== productToDelete.codigo));
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCopyProduct = async (product: any) => {
+    const productInfo = `
+Código: ${product.codigo}
+Descrição: ${product.descricao}
+Unidade: ${product.un}
+Moeda: ${product.moeda}
+Venda: ${product.venda}
+Estoque: ${product.estoque}
+Reservado: ${product.reservado}
+Comprado: ${product.comprado}
+Disponível: ${product.disponivel}
+    `.trim();
+
+    await Clipboard.setString(productInfo);
+    Alert.alert("Sucesso", "Informações do produto copiadas para a área de transferência!");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -43,7 +98,10 @@ export default function EstoqueScreen() {
             <MaterialCommunityIcons name="cube" size={32} color="#fff" />
             <ThemedText style={styles.title}>Estoque de Produtos</ThemedText>
           </View>
-          <TouchableOpacity style={styles.profileButton}>
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => router.push('/(tabs)/perfil')}
+          >
             <MaterialCommunityIcons name="account-circle" size={32} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -51,72 +109,80 @@ export default function EstoqueScreen() {
 
       <ScrollView style={styles.scrollContainer}>
         <ThemedView style={styles.contentContainer}>
-          <TouchableOpacity style={styles.createButton}>
+          <TouchableOpacity 
+            style={styles.createButton}
+            onPress={() => router.push('/produto-form')}
+          >
             <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
             <ThemedText style={styles.buttonText}>Novo Produto</ThemedText>
           </TouchableOpacity>
 
           <ThemedView style={styles.table}>
-            {inventoryData.map((item, index) => (
-              <ThemedView key={item.codigo} style={styles.tableRow}>
-                <View style={styles.rowHeader}>
-                  <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
-                  <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
-                </View>
+            {products.map((item) => (
+              <TouchableOpacity 
+                key={item.codigo}
+                onPress={() => handleProductPress(item)}
+              >
+                <ThemedView style={styles.tableRow}>
+                  <View style={styles.rowHeader}>
+                    <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
+                    <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
+                  </View>
 
-                <View style={styles.rowContent}>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Un.</ThemedText>
-                      <ThemedText style={styles.value}>{item.un}</ThemedText>
+                  <View style={styles.rowContent}>
+                    <View style={styles.column}>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Un.</ThemedText>
+                        <ThemedText style={styles.value}>{item.un}</ThemedText>
+                      </View>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Moeda</ThemedText>
+                        <ThemedText style={styles.value}>{item.moeda}</ThemedText>
+                      </View>
                     </View>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Moeda</ThemedText>
-                      <ThemedText style={styles.value}>{item.moeda}</ThemedText>
+                    <View style={styles.column}>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Venda</ThemedText>
+                        <ThemedText style={styles.value}>{item.venda}</ThemedText>
+                      </View>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Estoque</ThemedText>
+                        <ThemedText style={styles.value}>{item.estoque}</ThemedText>
+                      </View>
                     </View>
                   </View>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Venda</ThemedText>
-                      <ThemedText style={styles.value}>{item.venda}</ThemedText>
-                    </View>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Estoque</ThemedText>
-                      <ThemedText style={styles.value}>{item.estoque}</ThemedText>
-                    </View>
-                  </View>
-                </View>
 
-                <View style={styles.statusContainer}>
-                  <View style={styles.cell}>
-                    <ThemedText style={[styles.label, styles.redText]}>Reservado</ThemedText>
-                    <ThemedText style={styles.redText}>{item.reservado}</ThemedText>
+                  <View style={styles.statusContainer}>
+                    <View style={styles.cell}>
+                      <ThemedText style={[styles.label, styles.redText]}>Reservado</ThemedText>
+                      <ThemedText style={styles.redText}>{item.reservado}</ThemedText>
+                    </View>
+                    <View style={styles.cell}>
+                      <ThemedText style={[styles.label, styles.greenText]}>Comprado</ThemedText>
+                      <ThemedText style={styles.greenText}>{item.comprado}</ThemedText>
+                    </View>
+                    <View style={styles.cell}>
+                      <ThemedText style={[styles.label, styles.blueText]}>Disponível</ThemedText>
+                      <ThemedText style={styles.blueText}>{item.disponivel}</ThemedText>
+                    </View>
                   </View>
-                  <View style={styles.cell}>
-                    <ThemedText style={[styles.label, styles.greenText]}>Comprado</ThemedText>
-                    <ThemedText style={styles.greenText}>{item.comprado}</ThemedText>
-                  </View>
-                  <View style={styles.cell}>
-                    <ThemedText style={[styles.label, styles.blueText]}>Disponível</ThemedText>
-                    <ThemedText style={styles.blueText}>{item.disponivel}</ThemedText>
-                  </View>
-                </View>
 
-                <View style={styles.actionIcons}>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="pencil" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="delete" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="content-copy" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="file-document" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                </View>
-              </ThemedView>
+                  <View style={styles.actionIcons}>
+                    <TouchableOpacity onPress={() => handleEditProduct(item)}>
+                      <MaterialCommunityIcons name="pencil" size={20} color="#229dc9" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDeleteProduct(item)}>
+                      <MaterialCommunityIcons name="delete" size={20} color="#229dc9" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleCopyProduct(item)}>
+                      <MaterialCommunityIcons name="content-copy" size={20} color="#229dc9" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleProductPress(item)}>
+                      <MaterialCommunityIcons name="file-document" size={20} color="#229dc9" />
+                    </TouchableOpacity>
+                  </View>
+                </ThemedView>
+              </TouchableOpacity>
             ))}
           </ThemedView>
         </ThemedView>
@@ -129,6 +195,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    paddingBottom: 60,
   },
   headerGradient: {
     paddingTop: 60,
@@ -157,6 +224,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+    paddingBottom: 20,
   },
   contentContainer: {
     padding: 20,

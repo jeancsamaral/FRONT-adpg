@@ -1,9 +1,10 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
+import { useRouter } from 'expo-router';
 
 const clientData = [
   {
@@ -36,6 +37,59 @@ const clientData = [
 ];
 
 export default function ClientesScreen() {
+  const router = useRouter();
+  const [clients, setClients] = useState(clientData);
+
+  const handleClientPress = (client: any) => {
+    router.push({
+      pathname: '/(tabs)/cliente-detalhes',
+      params: client
+    });
+  };
+
+  const handleEditClient = (client: any) => {
+    // Impede que o card seja clicado ao clicar no ícone de editar
+    router.push({
+      pathname: '/(tabs)/cliente-form',
+      params: { ...client, isEditing: true }
+    });
+  };
+
+  const handleDeleteClient = (clientToDelete: any) => {
+    Alert.alert(
+      "Confirmar Exclusão",
+      `Deseja realmente excluir o cliente ${clientToDelete.razaoSocial}?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Excluir",
+          style: 'destructive',
+          onPress: () => {
+            setClients(clients.filter(client => client.codigo !== clientToDelete.codigo));
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCopyClient = async (client: any) => {
+    const clientInfo = `
+Código: ${client.codigo}
+Razão Social: ${client.razaoSocial}
+Cidade: ${client.cidade}
+UF: ${client.uf}
+Telefone: ${client.telefone}
+Contato: ${client.contato}
+Email: ${client.email}
+    `.trim();
+
+    await Clipboard.setString(clientInfo);
+    Alert.alert("Sucesso", "Informações do cliente copiadas para a área de transferência!");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -55,62 +109,86 @@ export default function ClientesScreen() {
 
       <ScrollView style={styles.scrollContainer}>
         <ThemedView style={styles.contentContainer}>
-          <TouchableOpacity style={styles.createButton} onPress={() => {/* Add your function here */}}>
+          <TouchableOpacity 
+            style={styles.createButton} 
+            onPress={() => router.push('/(tabs)/cliente-form')}
+          >
             <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
             <ThemedText style={styles.buttonText}>Criar Cliente</ThemedText>
           </TouchableOpacity>
 
           <ThemedView style={styles.table}>
-            {clientData.map((item, index) => (
-              <ThemedView key={index} style={styles.tableRow}>
-                <View style={styles.rowHeader}>
-                  <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
-                  <ThemedText style={styles.razaoSocial}>{item.razaoSocial}</ThemedText>
-                </View>
-                <View style={styles.rowContent}>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Cidade</ThemedText>
-                      <ThemedText style={styles.value}>{item.cidade}</ThemedText>
+            {clients.map((item, index) => (
+              <View key={index}>
+                <TouchableOpacity 
+                  onPress={() => handleClientPress(item)}
+                >
+                  <ThemedView style={styles.tableRow}>
+                    <View style={styles.rowHeader}>
+                      <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
+                      <ThemedText style={styles.razaoSocial}>{item.razaoSocial}</ThemedText>
+                    </View>
+                    <View style={styles.rowContent}>
+                      <View style={styles.column}>
+                        <View style={styles.cell}>
+                          <ThemedText style={styles.label}>Cidade</ThemedText>
+                          <ThemedText style={styles.value}>{item.cidade}</ThemedText>
+                        </View>
+                        <View style={styles.cell}>
+                          <ThemedText style={styles.label}>UF</ThemedText>
+                          <ThemedText style={styles.value}>{item.uf}</ThemedText>
+                        </View>
+                      </View>
+                      <View style={styles.column}>
+                        <View style={styles.cell}>
+                          <ThemedText style={styles.label}>Telefone</ThemedText>
+                          <ThemedText style={styles.value}>{item.telefone}</ThemedText>
+                        </View>
+                        <View style={styles.cell}>
+                          <ThemedText style={styles.label}>Contato</ThemedText>
+                          <ThemedText style={styles.value}>{item.contato}</ThemedText>
+                        </View>
+                      </View>
                     </View>
                     <View style={styles.cell}>
-                      <ThemedText style={styles.label}>UF</ThemedText>
-                      <ThemedText style={styles.value}>{item.uf}</ThemedText>
+                      <ThemedText style={styles.label}>Email</ThemedText>
+                      <ThemedText style={styles.value}>{item.email}</ThemedText>
                     </View>
-                  </View>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Telefone</ThemedText>
-                      <ThemedText style={styles.value}>{item.telefone}</ThemedText>
+                    <View style={styles.actionIcons}>
+                      <TouchableOpacity 
+                        onPress={() => handleEditClient(item)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <MaterialCommunityIcons 
+                          name="pencil" 
+                          size={20} 
+                          color="#229dc9" 
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => handleDeleteClient(item)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <MaterialCommunityIcons 
+                          name="delete" 
+                          size={20} 
+                          color="#dc2626" 
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => handleCopyClient(item)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <MaterialCommunityIcons 
+                          name="content-copy" 
+                          size={20} 
+                          color="#229dc9" 
+                        />
+                      </TouchableOpacity>
                     </View>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Contato</ThemedText>
-                      <ThemedText style={styles.value}>{item.contato}</ThemedText>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.cell}>
-                  <ThemedText style={styles.label}>Email</ThemedText>
-                  <ThemedText style={styles.value}>{item.email}</ThemedText>
-                </View>
-                <View style={styles.actionIcons}>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="pencil" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="delete" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="key" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="content-copy" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <MaterialCommunityIcons name="file-document" size={20} color="#229dc9" />
-                  </TouchableOpacity>
-                </View>
-              </ThemedView>
+                  </ThemedView>
+                </TouchableOpacity>
+              </View>
             ))}
           </ThemedView>
         </ThemedView>
@@ -123,6 +201,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    paddingBottom: 60,
   },
   headerGradient: {
     paddingTop: 60,
