@@ -8,7 +8,50 @@ import {
   ScrollView,
 } from 'react-native'
 import Ionicons from 'react-native-vector-icons/Ionicons'
-import { useRouter } from 'expo-router'
+import { useRouter, Href } from 'expo-router'
+
+// Definir interface para os itens do menu
+interface MenuItem {
+  icon: string;
+  title: string;
+  subtitle: string;
+  route: Href<string>;
+  color?: string;
+}
+
+const menuItems: MenuItem[] = [
+  {
+    icon: "person-outline",
+    title: "Dados do Usuário",
+    subtitle: "Informações da conta",
+    route: "/(tabs)/usuario-dados" as Href<string>
+  },
+  {
+    icon: "people-outline",
+    title: "Gerenciar Usuários",
+    subtitle: "Adicionar e gerenciar usuários do sistema",
+    route: "/(tabs)/usuarios" as Href<string>
+  },
+  {
+    icon: "shield-outline",
+    title: "Perfis de Acesso",
+    subtitle: "Gerenciar permissões de usuários",
+    route: "/(tabs)/perfis-acesso" as Href<string>
+  },
+  {
+    icon: "grid-outline",
+    title: "Configurar Colunas",
+    subtitle: "Visibilidade de dados por perfil",
+    route: "/(tabs)/config-colunas" as Href<string>
+  },
+  {
+    icon: "log-out-outline",
+    title: "Sair",
+    subtitle: "Encerrar sessão",
+    route: "/login" as Href<string>,
+    color: "#FF3B30"
+  }
+];
 
 export default function ProfileScreen() {
   const router = useRouter()
@@ -17,13 +60,10 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/(tabs)/')}>
+        <TouchableOpacity onPress={() => router.replace('/(tabs)/' as Href<string>)}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Meu Perfil</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/info')}>
-          <Ionicons name="information-circle-outline" size={24} color="#000" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Configurações</Text>
       </View>
 
       <ScrollView style={styles.content}>
@@ -31,97 +71,45 @@ export default function ProfileScreen() {
         <View style={styles.profileInfo}>
           <View>
             <Text style={styles.name}>João Silva</Text>
-            <Text style={styles.location}>Administrador</Text>
+            <Text style={styles.role}>Administrador</Text>
           </View>
-          <View style={styles.followSection}>
-            <TouchableOpacity style={styles.followButton}>
-              <Text style={styles.followButtonText}>Editar Perfil</Text>
-            </TouchableOpacity>
-            <View style={styles.followStats}>
-              <Text style={styles.followCount}>127</Text>
-              <Text style={styles.followLabel}>Vendas</Text>
-            </View>
-            <View style={styles.followStats}>
-              <Text style={styles.followCount}>45</Text>
-              <Text style={styles.followLabel}>Clientes</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Metrics Cards */}
-        <View style={styles.metricsContainer}>
-          <View style={[styles.metricCard, { backgroundColor: '#9dd6eb' }]}>
-            <Text style={styles.metricValue}>R$ 15.430</Text>
-            <Text style={styles.metricLabel}>Vendas do Mês</Text>
-          </View>
-          <View style={[styles.metricCard, { backgroundColor: '#FFFFFF' }]}>
-            <Text style={styles.metricValue}>R$ 20.000</Text>
-            <Text style={styles.metricLabel}>Meta Mensal</Text>
-          </View>
-          <View style={[styles.metricCard, { backgroundColor: '#FFE0B2' }]}>
-            <Text style={styles.metricValue}>85%</Text>
-            <Text style={styles.metricLabel}>Desempenho</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.editProfileButton}
+            onPress={() => router.push('/(tabs)/usuario-dados' as Href<string>)}
+          >
+            <Text style={styles.editProfileText}>Editar Perfil</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="person-outline" size={24} color="#000" />
-            <View style={styles.menuItemText}>
-              <Text style={styles.menuTitle}>Dados Pessoais</Text>
-              <Text style={styles.menuSubtitle}>Informações da conta</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#000" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="notifications-outline" size={24} color="#000" />
-            <View style={styles.menuItemText}>
-              <Text style={styles.menuTitle}>Notificações</Text>
-              <Text style={styles.menuSubtitle}>Configurar alertas</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#000" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="lock-closed-outline" size={24} color="#000" />
-            <View style={styles.menuItemText}>
-              <Text style={styles.menuTitle}>Segurança</Text>
-              <Text style={styles.menuSubtitle}>Senha e autenticação</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#000" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="help-circle-outline" size={24} color="#000" />
-            <View style={styles.menuItemText}>
-              <Text style={styles.menuTitle}>Ajuda</Text>
-              <Text style={styles.menuSubtitle}>Suporte e FAQ</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#000" />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => router.push('/(tabs)/usuarios')}
-          >
-            <Ionicons name="people-outline" size={24} color="#333" />
-            <View style={styles.menuItemText}>
-              <Text style={styles.menuTitle}>Gerenciar Usuários</Text>
-              <Text style={styles.menuSubtitle}>Adicionar e gerenciar usuários do sistema</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#666" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.replace('/login')}>
-            <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
-            <View style={styles.menuItemText}>
-              <Text style={[styles.menuTitle, { color: '#FF3B30' }]}>Sair</Text>
-              <Text style={styles.menuSubtitle}>Encerrar sessão</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#FF3B30" />
-          </TouchableOpacity>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity 
+              key={index}
+              style={styles.menuItem}
+              onPress={() => router.push(item.route)}
+            >
+              <Ionicons 
+                name={item.icon as any} 
+                size={24} 
+                color={item.color || "#333"} 
+              />
+              <View style={styles.menuItemText}>
+                <Text style={[
+                  styles.menuTitle,
+                  item.color ? { color: item.color } : undefined
+                ]}>
+                  {item.title}
+                </Text>
+                <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+              </View>
+              <Ionicons 
+                name="chevron-forward" 
+                size={24} 
+                color={item.color || "#666"} 
+              />
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
 
@@ -129,25 +117,25 @@ export default function ProfileScreen() {
       <View style={styles.bottomNav}>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)')}
+          onPress={() => router.push('/(tabs)' as Href<string>)}
         >
           <Ionicons name="home-outline" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/clientes')}
+          onPress={() => router.push('/(tabs)/clientes' as Href<string>)}
         >
           <Ionicons name="people-outline" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/estoque')}
+          onPress={() => router.push('/(tabs)/estoque' as Href<string>)}
         >
           <Ionicons name="cube-outline" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/info')}
+          onPress={() => router.push('/(tabs)/info' as Href<string>)}
         >
           <Ionicons name="settings-outline" size={24} color="#000" />
         </TouchableOpacity>
@@ -179,85 +167,66 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileInfo: {
-    padding: 16,
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   name: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 4,
   },
-  location: {
-    fontSize: 14,
+  role: {
+    fontSize: 16,
     color: '#666',
   },
-  followSection: {
-    flexDirection: 'row',
+  editProfileButton: {
+    backgroundColor: '#229dc9',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 12,
     alignItems: 'center',
-    marginTop: 16,
-    gap: 16,
   },
-  followButton: {
-    backgroundColor: '#000',
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  followButtonText: {
+  editProfileText: {
     color: '#fff',
-    fontWeight: '600',
-  },
-  followStats: {
-    alignItems: 'center',
-  },
-  followCount: {
     fontSize: 16,
-    fontWeight: '600',
-  },
-  followLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  metricsContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-  },
-  metricCard: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  metricValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
+    fontWeight: '500',
   },
   menuContainer: {
-    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#f0f0f0',
   },
   menuItemText: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 12,
   },
   menuTitle: {
     fontSize: 16,
     fontWeight: '500',
+    color: '#333',
   },
   menuSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     marginTop: 2,
   },
