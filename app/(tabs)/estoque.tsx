@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
@@ -32,9 +32,44 @@ const productData = [
   },
 ];
 
+// Adicione essa interface para tipar os filtros
+interface Filters {
+  codigo: boolean;
+  descricao: boolean;
+  un: boolean;
+  moeda: boolean;
+  venda: boolean;
+  estoque: boolean;
+}
+
 export default function EstoqueScreen() {
   const router = useRouter();
   const [products, setProducts] = useState(productData);
+  const [searchText, setSearchText] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    codigo: true,
+    descricao: true,
+    un: true,
+    moeda: true,
+    venda: true,
+    estoque: true,
+  });
+
+  // Função para filtrar os produtos baseado na busca e filtros
+  const filteredProducts = React.useMemo(() => {
+    if (!searchText) return products;
+
+    return products.filter(product => {
+      const searchLower = searchText.toLowerCase();
+      const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
+
+      return fieldsToSearch.some(field => {
+        const value = product[field as keyof typeof product];
+        return value && value.toString().toLowerCase().includes(searchLower);
+      });
+    });
+  }, [products, searchText, filters]);
 
   const handleProductPress = (product: any) => {
     router.push({
@@ -109,6 +144,52 @@ Disponível: ${product.disponivel}
 
       <ScrollView style={styles.scrollContainer}>
         <ThemedView style={styles.contentContainer}>
+          {/* Barra de busca */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar produtos..."
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+            <TouchableOpacity 
+              style={styles.filterButton}
+              onPress={() => setShowFilters(!showFilters)}
+            >
+              <MaterialCommunityIcons 
+                name="filter-variant" 
+                size={24} 
+                color="#229dc9" 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Filtros */}
+          {showFilters && (
+            <View style={styles.filtersContainer}>
+              <ThemedText style={styles.filtersTitle}>Buscar em:</ThemedText>
+              <View style={styles.filterOptions}>
+                {Object.entries(filters).map(([key, value]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.filterOption, value && styles.filterOptionActive]}
+                    onPress={() => setFilters(prev => ({
+                      ...prev,
+                      [key]: !prev[key as keyof Filters]
+                    }))}
+                  >
+                    <ThemedText style={[
+                      styles.filterOptionText,
+                      value && styles.filterOptionTextActive
+                    ]}>
+                      {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           <TouchableOpacity 
             style={styles.createButton}
             onPress={() => router.push('/produto-form')}
@@ -118,7 +199,7 @@ Disponível: ${product.disponivel}
           </TouchableOpacity>
 
           <ThemedView style={styles.table}>
-            {products.map((item) => (
+            {filteredProducts.map((item) => (
               <TouchableOpacity 
                 key={item.codigo}
                 onPress={() => handleProductPress(item)}
@@ -318,5 +399,65 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterButton: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filtersContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filtersTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterOptionActive: {
+    backgroundColor: '#229dc9',
+    borderColor: '#229dc9',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  filterOptionTextActive: {
+    color: '#fff',
   },
 });

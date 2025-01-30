@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { UserForm } from '../components/UserForm';
 import { User } from '../types';
+import { useRouter } from 'expo-router';
 
 // Dados de exemplo
 const usersData = [
@@ -29,10 +30,42 @@ const usersData = [
   },
 ];
 
+// Adicione essa interface para tipar os filtros
+interface Filters {
+  codusr: boolean;
+  nome: boolean;
+  supervisor: boolean;
+  inativo: boolean;
+}
+
 export default function UsuariosScreen() {
+  const router = useRouter();
   const [users, setUsers] = useState(usersData);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    codusr: true,
+    nome: true,
+    supervisor: true,
+    inativo: true,
+  });
+
+  // Função para filtrar os usuários baseado na busca e filtros
+  const filteredUsers = React.useMemo(() => {
+    if (!searchText) return users;
+
+    return users.filter(user => {
+      const searchLower = searchText.toLowerCase();
+      const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
+
+      return fieldsToSearch.some(field => {
+        const value = user[field as keyof typeof user];
+        return value && value.toString().toLowerCase().includes(searchLower);
+      });
+    });
+  }, [users, searchText, filters]);
 
   const handleCreateUser = async (userData: Partial<User>) => {
     // Aqui você implementaria a lógica para criar um usuário
@@ -82,6 +115,12 @@ export default function UsuariosScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerContent}>
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              style={styles.backButton}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+            </TouchableOpacity>
             <MaterialCommunityIcons name="account-cog" size={32} color="#fff" />
             <ThemedText style={styles.title}>Gerenciar Usuários</ThemedText>
           </View>
@@ -92,6 +131,52 @@ export default function UsuariosScreen() {
         <ThemedView style={styles.contentContainer}>
           {!isEditing ? (
             <>
+              {/* Barra de busca */}
+              <View style={styles.searchContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar usuários..."
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+                <TouchableOpacity 
+                  style={styles.filterButton}
+                  onPress={() => setShowFilters(!showFilters)}
+                >
+                  <MaterialCommunityIcons 
+                    name="filter-variant" 
+                    size={24} 
+                    color="#229dc9" 
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Filtros */}
+              {showFilters && (
+                <View style={styles.filtersContainer}>
+                  <ThemedText style={styles.filtersTitle}>Buscar em:</ThemedText>
+                  <View style={styles.filterOptions}>
+                    {Object.entries(filters).map(([key, value]) => (
+                      <TouchableOpacity
+                        key={key}
+                        style={[styles.filterOption, value && styles.filterOptionActive]}
+                        onPress={() => setFilters(prev => ({
+                          ...prev,
+                          [key]: !prev[key as keyof Filters]
+                        }))}
+                      >
+                        <ThemedText style={[
+                          styles.filterOptionText,
+                          value && styles.filterOptionTextActive
+                        ]}>
+                          {key.charAt(0).toUpperCase() + key.slice(1)}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               <TouchableOpacity 
                 style={styles.createButton}
                 onPress={() => setIsEditing(true)}
@@ -101,7 +186,7 @@ export default function UsuariosScreen() {
               </TouchableOpacity>
 
               <ThemedView style={styles.table}>
-                {users.map((item) => (
+                {filteredUsers.map((item) => (
                   <ThemedView key={item.id} style={styles.tableRow}>
                     <ThemedView style={styles.rowHeader}>
                       <ThemedText style={styles.codigo}>{item.codusr}</ThemedText>
@@ -254,5 +339,69 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterButton: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filtersContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filtersTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterOptionActive: {
+    backgroundColor: '#229dc9',
+    borderColor: '#229dc9',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  filterOptionTextActive: {
+    color: '#fff',
+  },
+  backButton: {
+    marginRight: 10,
+    padding: 8,
   },
 });
