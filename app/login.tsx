@@ -20,6 +20,11 @@ export default function LoginScreen() {
     const { login } = useAuth();
 
     const handleLogin = async () => {
+        // Por enquanto, sempre será bem-sucedido
+        router.replace('/(tabs)');
+        
+        // Código original comentado:
+        /*
         const success = await login(form.login, form.password);
         
         if (success) {
@@ -28,6 +33,7 @@ export default function LoginScreen() {
         } else {
             setError('Login ou senha inválidos');
         }
+        */
     };
 
     return (

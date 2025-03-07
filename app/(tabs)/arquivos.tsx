@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
@@ -39,9 +39,40 @@ const tdsData = [
   },
 ];
 
+// Adicione essa interface para tipar os filtros
+interface Filters {
+  nome: boolean;
+  tipo: boolean;
+  tamanho: boolean;
+  data: boolean;
+}
+
 export default function ArquivosScreen() {
   const [activeTab, setActiveTab] = useState<'FISQP' | 'TDS'>('FISQP');
-  const currentData = activeTab === 'FISQP' ? fisqpData : tdsData;
+  const [searchText, setSearchText] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    nome: true,
+    tipo: true,
+    tamanho: true,
+    data: true,
+  });
+
+  // Função para filtrar os documentos baseado na busca e filtros
+  const filteredData = React.useMemo(() => {
+    const currentData = activeTab === 'FISQP' ? fisqpData : tdsData;
+    if (!searchText) return currentData;
+
+    return currentData.filter(doc => {
+      const searchLower = searchText.toLowerCase();
+      const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
+
+      return fieldsToSearch.some(field => {
+        const value = doc[field as keyof typeof doc];
+        return value && value.toString().toLowerCase().includes(searchLower);
+      });
+    });
+  }, [activeTab, searchText, filters]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -81,8 +112,54 @@ export default function ArquivosScreen() {
 
       <ScrollView style={styles.scrollContainer}>
         <ThemedView style={styles.contentContainer}>
+          {/* Barra de busca */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar documentos..."
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+            <TouchableOpacity 
+              style={styles.filterButton}
+              onPress={() => setShowFilters(!showFilters)}
+            >
+              <MaterialCommunityIcons 
+                name="filter-variant" 
+                size={24} 
+                color="#229dc9" 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Filtros */}
+          {showFilters && (
+            <View style={styles.filtersContainer}>
+              <ThemedText style={styles.filtersTitle}>Buscar em:</ThemedText>
+              <View style={styles.filterOptions}>
+                {Object.entries(filters).map(([key, value]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.filterOption, value && styles.filterOptionActive]}
+                    onPress={() => setFilters(prev => ({
+                      ...prev,
+                      [key]: !prev[key as keyof Filters]
+                    }))}
+                  >
+                    <ThemedText style={[
+                      styles.filterOptionText,
+                      value && styles.filterOptionTextActive
+                    ]}>
+                      {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           <ThemedView style={styles.table}>
-            {currentData.map((item) => (
+            {filteredData.map((item) => (
               <ThemedView key={item.id} style={styles.tableRow}>
                 <View style={styles.rowHeader}>
                   <MaterialCommunityIcons 
@@ -245,6 +322,66 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   activeTabText: {
+    color: '#fff',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterButton: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filtersContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filtersTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterOptionActive: {
+    backgroundColor: '#229dc9',
+    borderColor: '#229dc9',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  filterOptionTextActive: {
     color: '#fff',
   },
 }); 
