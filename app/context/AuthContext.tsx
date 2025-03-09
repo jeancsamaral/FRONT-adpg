@@ -1,13 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../services/api';
-import { API_ENDPOINTS } from '../constants/Config';
-import { AuthResponse, User } from '../types';
+import { UsuarioAuth } from '../../backEnd/interfaces';
+import ApiCaller from '../../backEnd/apiCaller';
 
-interface AuthContextType {
+const apiCaller = new ApiCaller();
+
+// Add token to the auth state
+interface AuthState {
   isAuthenticated: boolean;
-  user: User | null;
-  login: (login: string, password: string) => Promise<boolean>;
+  user: UsuarioAuth | null;
+  token: string | null;
+}
+
+interface AuthContextType extends AuthState {
+  login: (credentials: { login: string; password: string }) => Promise<boolean>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -15,14 +21,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   user: null,
+  token: null,
   login: async () => false,
   logout: async () => {},
   loading: false,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    user: null,
+    token: null,
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,35 +41,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkToken = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        // Verificar se o token ainda é válido fazendo uma requisição
-        const response = await api.get('/auth/verify');
-        setIsAuthenticated(true);
-        setUser(response.data.user);
+      const storedToken = await AsyncStorage.getItem('token');
+      const storedUser = await AsyncStorage.getItem('user');
+
+      if (storedToken && storedUser) {
+        setAuthState({
+          isAuthenticated: true,
+          token: storedToken,
+          user: JSON.parse(storedUser),
+        });
       }
     } catch (error) {
-      await AsyncStorage.removeItem('token');
-      setIsAuthenticated(false);
-      setUser(null);
+      console.error('Error checking token:', error);
+      await logout();
     }
   };
 
-  const login = async (login: string, password: string) => {
+  const login = async (credentials: { login: string; password: string }) => {
     try {
       setLoading(true);
-      const response = await api.post<AuthResponse>(API_ENDPOINTS.AUTH, {
-        login,
-        password,
-      });
+      const response = await apiCaller.authMethods.loginUser(
+        credentials,
+        '' // Initial token not needed for login
+      );
 
-      const { token, user } = response.data;
-      
-      await AsyncStorage.setItem('token', token);
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      return true;
+      if (response && response.token) {
+        // Store both token and user data
+        await AsyncStorage.setItem('token', response.token);
+        await AsyncStorage.setItem('user', JSON.stringify(response.user));
+
+        setAuthState({
+          isAuthenticated: true,
+          token: response.token,
+          user: response.user,
+        });
+
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -69,13 +88,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('token');
-    setUser(null);
-    setIsAuthenticated(false);
+    await AsyncStorage.multiRemove(['token', 'user']);
+    setAuthState({
+      isAuthenticated: false,
+      user: null,
+      token: null,
+    });
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
+    <AuthContext.Provider 
+      value={{ 
+        ...authState,
+        login, 
+        logout, 
+        loading 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -7,6 +7,7 @@ import {
     StyleSheet,
     Image,
     SafeAreaView,
+    ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from './context/AuthContext';
@@ -17,23 +18,28 @@ export default function LoginScreen() {
         password: '',
     });
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, loading } = useAuth();
 
     const handleLogin = async () => {
-        // Por enquanto, sempre será bem-sucedido
-        router.replace('/(tabs)');
-        
-        // Código original comentado:
-        /*
-        const success = await login(form.login, form.password);
-        
-        if (success) {
-            setError('');
-            router.replace('/(tabs)');
-        } else {
-            setError('Login ou senha inválidos');
+        if (!form.login || !form.password) {
+            setError('Por favor, preencha todos os campos');
+            return;
         }
-        */
+
+        try {
+            const success = await login(form);
+            
+            if (success) {
+                setError('');
+                router.replace('/(tabs)');
+            } else {
+                console.log("Login failed");
+                setError('Login ou senha inválidos');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setError('Erro ao fazer login. Tente novamente.');
+        }
     };
 
     return (
@@ -55,6 +61,7 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     value={form.login}
                     onChangeText={login => setForm({ ...form, login })}
+                    editable={!loading}
                 />
                 <TextInput
                     style={styles.input}
@@ -65,12 +72,21 @@ export default function LoginScreen() {
                     secureTextEntry={true}
                     value={form.password}
                     onChangeText={password => setForm({ ...form, password })}
+                    editable={!loading}
                 />
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-                <TouchableOpacity style={styles.continueButton} onPress={handleLogin}>
-                    <Text style={styles.continueButtonText}>Entrar</Text>
+                <TouchableOpacity 
+                    style={[styles.continueButton, loading && styles.disabledButton]} 
+                    onPress={handleLogin}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.continueButtonText}>Entrar</Text>
+                    )}
                 </TouchableOpacity>
 
                 <View style={styles.footer}>
@@ -187,5 +203,8 @@ const styles = StyleSheet.create({
     forgotPassword: {
         color: '#229dc9',
         textAlign: 'center',
+    },
+    disabledButton: {
+        backgroundColor: '#ccc',
     },
 });

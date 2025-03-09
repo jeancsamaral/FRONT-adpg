@@ -19,7 +19,7 @@ export async function getAllRegionalPrices(
   token: string
 ) {
   if (environment.appState === "OFFLINE") {
-    return mockedRegionalPrices;
+    return Promise.resolve(mockedRegionalPrices);
   }
   return useAxios(
     `/regionalPrices/all?page=${page}&limit=${limit}`,
@@ -36,7 +36,7 @@ export async function getFilteredRegionalPrices(
   token: string
 ) {
   if (environment.appState === "OFFLINE") {
-    return mockedRegionalPrices;
+    return Promise.resolve(mockedRegionalPrices);
   }
   return useAxios(
     `/regionalPrices/filtered?filter=${JSON.stringify(
