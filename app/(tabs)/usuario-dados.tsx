@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  TextInput,
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,18 +13,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function UserDataScreen() {
   const router = useRouter();
-  const [userData, setUserData] = useState({
+  const userData = {
     nome: 'João Silva',
     email: 'joao.silva@email.com',
     login: 'joaosilva',
-    senha: '',
-    confirmarSenha: '',
-  });
-
-  const handleSave = () => {
-    // Implementar lógica de salvamento
-    console.log('Dados salvos:', userData);
-    router.back();
   };
 
   return (
@@ -44,68 +35,22 @@ export default function UserDataScreen() {
 
       <ScrollView style={styles.content}>
         <View style={styles.form}>
-          <View style={styles.inputGroup}>
+          <View style={styles.infoGroup}>
             <Text style={styles.label}>Nome Completo</Text>
-            <TextInput
-              style={styles.input}
-              value={userData.nome}
-              onChangeText={(text) => setUserData({ ...userData, nome: text })}
-              placeholder="Digite seu nome"
-            />
+            <Text style={styles.value}>{userData.nome}</Text>
           </View>
 
-          <View style={styles.inputGroup}>
+          <View style={styles.infoGroup}>
             <Text style={styles.label}>E-mail</Text>
-            <TextInput
-              style={styles.input}
-              value={userData.email}
-              onChangeText={(text) => setUserData({ ...userData, email: text })}
-              placeholder="Digite seu e-mail"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <Text style={styles.value}>{userData.email}</Text>
           </View>
 
-          <View style={styles.inputGroup}>
+          <View style={styles.infoGroup}>
             <Text style={styles.label}>Login</Text>
-            <TextInput
-              style={styles.input}
-              value={userData.login}
-              onChangeText={(text) => setUserData({ ...userData, login: text })}
-              placeholder="Digite seu login"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nova Senha</Text>
-            <TextInput
-              style={styles.input}
-              value={userData.senha}
-              onChangeText={(text) => setUserData({ ...userData, senha: text })}
-              placeholder="Digite sua nova senha"
-              secureTextEntry
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirmar Nova Senha</Text>
-            <TextInput
-              style={styles.input}
-              value={userData.confirmarSenha}
-              onChangeText={(text) => setUserData({ ...userData, confirmarSenha: text })}
-              placeholder="Confirme sua nova senha"
-              secureTextEntry
-            />
+            <Text style={styles.value}>{userData.login}</Text>
           </View>
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Salvar Alterações</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -146,37 +91,20 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  inputGroup: {
+  infoGroup: {
     marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   label: {
     fontSize: 14,
     color: '#666',
     marginBottom: 8,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+  value: {
     fontSize: 16,
     color: '#333',
-  },
-  footer: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  saveButton: {
-    backgroundColor: '#229dc9',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 }); 

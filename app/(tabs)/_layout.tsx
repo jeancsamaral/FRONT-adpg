@@ -50,6 +50,16 @@ export default function Layout() {
             />
           </TouchableOpacity>
           <TouchableOpacity 
+            style={[styles.navItem, isActive('/(tabs)/precos') && styles.activeNavItem]}
+            onPress={() => router.push('/(tabs)/precos')}
+          >
+            <Ionicons 
+              name="pricetag-outline" 
+              size={24} 
+              color={isActive('/(tabs)/precos') ? "#007AFF" : "#000"} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
             style={[styles.navItem, isActive('/(tabs)/arquivos') && styles.activeNavItem]}
             onPress={() => router.push('/(tabs)/arquivos')}
           >

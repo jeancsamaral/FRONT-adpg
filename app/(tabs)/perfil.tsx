@@ -73,12 +73,6 @@ export default function ProfileScreen() {
             <Text style={styles.name}>João Silva</Text>
             <Text style={styles.role}>Administrador</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.editProfileButton}
-            onPress={() => router.push('/(tabs)/usuario-dados' as Href<string>)}
-          >
-            <Text style={styles.editProfileText}>Editar Perfil</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Menu Items */}
@@ -186,18 +180,6 @@ const styles = StyleSheet.create({
   role: {
     fontSize: 16,
     color: '#666',
-  },
-  editProfileButton: {
-    backgroundColor: '#229dc9',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  editProfileText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
   },
   menuContainer: {
     backgroundColor: '#fff',
