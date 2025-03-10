@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -6,9 +6,16 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import { useRouter, Href } from 'expo-router'
+import { UsuariosApp, UsuarioAuth } from '../../backEnd/interfaces'
+import ApiCaller from '../../backEnd/apiCaller'
+import { useAuth } from '../context/AuthContext'
+
+const apiCaller = new ApiCaller();
 
 // Definir interface para os itens do menu
 interface MenuItem {
@@ -55,6 +62,52 @@ const menuItems: MenuItem[] = [
 
 export default function ProfileScreen() {
   const router = useRouter()
+  const { token, logout } = useAuth();
+  const [userData, setUserData] = useState<UsuariosApp | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (token) {
+      fetchUserData();
+    } else {
+      router.replace('/login');
+    }
+  }, [token]);
+
+  const fetchUserData = async () => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Assuming we're getting the current user's data
+      // In a real app, you might get the user ID from params or context
+      const users = await apiCaller.userMethods.getAllUsers(1, 10, token);
+      if (users && users.length > 0) {
+        setUserData(users[0]); // For demo, just using the first user
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados do usuário.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    // Use the logout function from AuthContext
+    logout();
+    router.replace('/login');
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#229dc9" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,8 +123,10 @@ export default function ProfileScreen() {
         {/* Profile Info */}
         <View style={styles.profileInfo}>
           <View>
-            <Text style={styles.name}>João Silva</Text>
-            <Text style={styles.role}>Administrador</Text>
+            <Text style={styles.name}>{userData?.nome || 'Usuário'}</Text>
+            <Text style={styles.role}>
+              {userData?.login?.isAdmin ? 'Administrador' : 'Usuário'}
+            </Text>
           </View>
         </View>
 
@@ -81,7 +136,13 @@ export default function ProfileScreen() {
             <TouchableOpacity 
               key={index}
               style={styles.menuItem}
-              onPress={() => router.push(item.route)}
+              onPress={() => {
+                if (item.icon === 'log-out-outline') {
+                  handleLogout();
+                } else {
+                  router.push(item.route);
+                }
+              }}
             >
               <Ionicons 
                 name={item.icon as any} 

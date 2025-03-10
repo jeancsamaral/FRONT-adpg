@@ -18,10 +18,10 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen() {
   const router = useRouter();
   const quickActions = [
-    { icon: 'account-group', title: 'Clientes', count: '143', route: '/(tabs)/clientes' },
-    { icon: 'chart-line', title: 'Estoque', count: '32', route: '/(tabs)/estoque' },
-    { icon: 'cash-multiple', title: 'Preços', route: '/(tabs)/precos', count: '10' },
-    { icon: 'file-document', title: 'Documentos', route: '/(tabs)/arquivos', count: '25' },
+    { icon: 'account-group', title: 'Clientes', route: '/(tabs)/clientes' },
+    { icon: 'chart-line', title: 'Estoque', route: '/(tabs)/estoque' },
+    { icon: 'cash-multiple', title: 'Preços', route: '/(tabs)/precos' },
+    { icon: 'file-document', title: 'Documentos', route: '/(tabs)/arquivos' },
     { icon: 'cog', title: 'Configurações', route: '/(tabs)/perfil' },
   ];
 
@@ -65,9 +65,6 @@ export default function HomeScreen() {
                   color="#fff" 
                 />
                 <Text style={styles.statTitle}>{action.title}</Text>
-                {action.count && (
-                  <Text style={styles.statCount}>{action.count}</Text>
-                )}
               </LinearGradient>
             </TouchableOpacity>
           ))}
@@ -129,11 +126,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  statCount: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
   },
   sectionContainer: {
     padding: 20,

@@ -5,6 +5,7 @@ import {
   updateNota,
   createNotaItem,
   getNotaItems,
+  getNotaByClientId
 } from "./notaMethods";
 import { NotasMethods } from '../../apiMethods';
 
@@ -15,6 +16,7 @@ export class ImplementedNotasMethods extends NotasMethods {
   updateNota = updateNota;
   createNotaItem = createNotaItem;
   getNotaItems = getNotaItems;
+  getNotaByClientId = getNotaByClientId;
 }
 
 export const Implemented_Notas_Methods = new ImplementedNotasMethods();
@@ -26,4 +28,5 @@ export {
   updateNota,
   createNotaItem,
   getNotaItems,
+  getNotaByClientId
 };

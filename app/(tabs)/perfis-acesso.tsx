@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,19 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { UsuariosApp, UsuarioAuth } from '../../backEnd/interfaces';
+import ApiCaller from '../../backEnd/apiCaller';
+import { ThemedView } from '../components/ThemedView';
+import { ThemedText } from '../components/ThemedText';
+import { useAuth } from '../context/AuthContext';
+
+const apiCaller = new ApiCaller();
 
 interface Permission {
   id: string;
@@ -26,36 +35,135 @@ interface PermissionGroup {
 
 export default function AccessProfilesScreen() {
   const router = useRouter();
+  const { token } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState<UsuariosApp | null>(null);
   const [permissionGroups, setPermissionGroups] = useState<PermissionGroup[]>([
     {
       name: 'Clientes',
       permissions: [
-        { id: 'client_view', name: 'Visualizar', description: 'Ver lista de clientes', enabled: true },
-        { id: 'client_create', name: 'Criar', description: 'Adicionar novos clientes', enabled: true },
-        { id: 'client_edit', name: 'Editar', description: 'Modificar dados de clientes', enabled: false },
-        { id: 'client_delete', name: 'Excluir', description: 'Remover clientes', enabled: false },
-      ],
+        { id: 'client_view', name: 'Visualizar', description: 'Visualizar clientes', enabled: true },
+        { id: 'client_create', name: 'Criar', description: 'Criar novos clientes', enabled: false },
+        { id: 'client_edit', name: 'Editar', description: 'Editar clientes existentes', enabled: true },
+        { id: 'client_delete', name: 'Excluir', description: 'Excluir clientes', enabled: false },
+      ]
     },
     {
       name: 'Produtos',
       permissions: [
-        { id: 'product_view', name: 'Visualizar', description: 'Ver lista de produtos', enabled: true },
-        { id: 'product_create', name: 'Criar', description: 'Adicionar novos produtos', enabled: true },
-        { id: 'product_edit', name: 'Editar', description: 'Modificar dados de produtos', enabled: false },
-        { id: 'product_delete', name: 'Excluir', description: 'Remover produtos', enabled: false },
-      ],
+        { id: 'product_view', name: 'Visualizar', description: 'Visualizar produtos', enabled: true },
+        { id: 'product_create', name: 'Criar', description: 'Criar novos produtos', enabled: false },
+        { id: 'product_edit', name: 'Editar', description: 'Editar produtos existentes', enabled: false },
+        { id: 'product_delete', name: 'Excluir', description: 'Excluir produtos', enabled: false },
+      ]
     },
+    {
+      name: 'Usuários',
+      permissions: [
+        { id: 'user_view', name: 'Visualizar', description: 'Visualizar usuários', enabled: true },
+        { id: 'user_create', name: 'Criar', description: 'Criar novos usuários', enabled: false },
+        { id: 'user_edit', name: 'Editar', description: 'Editar usuários existentes', enabled: false },
+        { id: 'user_delete', name: 'Excluir', description: 'Excluir usuários', enabled: false },
+      ]
+    }
   ]);
 
-  const togglePermission = (groupIndex: number, permissionId: string) => {
-    const newGroups = [...permissionGroups];
-    const group = newGroups[groupIndex];
-    const permission = group.permissions.find(p => p.id === permissionId);
-    if (permission) {
-      permission.enabled = !permission.enabled;
+  useEffect(() => {
+    if (token) {
+      fetchUserData();
+    } else {
+      router.replace('/login');
     }
-    setPermissionGroups(newGroups);
+  }, [token]);
+
+  const fetchUserData = async () => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Assuming we're getting the current user's data
+      // In a real app, you might get the user ID from params or context
+      const users = await apiCaller.userMethods.getAllUsers(1, 10, token);
+      if (users && users.length > 0) {
+        setUserData(users[0]); // For demo, just using the first user
+        
+        // If the user has profileAccess data, update the permission groups
+        if (users[0].login && users[0].login.profileAccess) {
+          updatePermissionsFromProfile(users[0].login.profileAccess);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados do usuário.');
+      setLoading(false);
+    }
   };
+
+  const updatePermissionsFromProfile = (profileAccess: string[]) => {
+    // Update the permission groups based on the user's profile access
+    const updatedGroups = [...permissionGroups];
+    
+    updatedGroups.forEach(group => {
+      group.permissions.forEach(permission => {
+        permission.enabled = profileAccess.includes(permission.id);
+      });
+    });
+    
+    setPermissionGroups(updatedGroups);
+  };
+
+  const togglePermission = (groupIndex: number, permissionId: string) => {
+    const updatedGroups = [...permissionGroups];
+    const permissionIndex = updatedGroups[groupIndex].permissions.findIndex(p => p.id === permissionId);
+    
+    if (permissionIndex !== -1) {
+      updatedGroups[groupIndex].permissions[permissionIndex].enabled = 
+        !updatedGroups[groupIndex].permissions[permissionIndex].enabled;
+      
+      setPermissionGroups(updatedGroups);
+      
+      // In a real app, you would update the user's profile access on the server
+      savePermissions(updatedGroups);
+    }
+  };
+
+  const savePermissions = async (groups: PermissionGroup[]) => {
+    if (!token || !userData || !userData.login) return;
+    
+    try {
+      // Extract all enabled permission IDs
+      const profileAccess = groups.flatMap(group => 
+        group.permissions.filter(p => p.enabled).map(p => p.id)
+      );
+      
+      // Create updated user auth data
+      const updatedAuth: Partial<UsuarioAuth> = {
+        ...userData.login,
+        profileAccess
+      };
+      
+      // In a real implementation, you would call an API to update the user's permissions
+      console.log('Saving updated permissions:', profileAccess);
+      
+      // This is a placeholder for the actual API call
+      // await apiCaller.authMethods.updateUserPermissions(userData.id.toString(), updatedAuth, token);
+      
+      Alert.alert('Sucesso', 'Permissões atualizadas com sucesso!');
+    } catch (error) {
+      console.error('Error saving permissions:', error);
+      Alert.alert('Erro', 'Não foi possível salvar as permissões.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#229dc9" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -64,42 +172,64 @@ export default function AccessProfilesScreen() {
         style={styles.headerGradient}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Perfis de Acesso</Text>
+          <View style={styles.headerContent}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/usuario-dados' as Href<string>)}>
+              <MaterialCommunityIcons name="account-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+            <ThemedText style={styles.title}>Perfis de Acesso</ThemedText>
+          </View>
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content}>
-        {permissionGroups.map((group, groupIndex) => (
-          <View key={group.name} style={styles.group}>
-            <Text style={styles.groupTitle}>{group.name}</Text>
-            {group.permissions.map((permission) => (
-              <View key={permission.id} style={styles.permissionItem}>
-                <View style={styles.permissionInfo}>
-                  <Text style={styles.permissionName}>{permission.name}</Text>
-                  <Text style={styles.permissionDescription}>
-                    {permission.description}
-                  </Text>
-                </View>
-                <Switch
-                  value={permission.enabled}
-                  onValueChange={() => togglePermission(groupIndex, permission.id)}
-                  trackColor={{ false: '#ddd', true: '#229dc9' }}
-                  thumbColor={permission.enabled ? '#fff' : '#f4f3f4'}
-                />
+      <ScrollView style={styles.scrollContainer}>
+        <ThemedView style={styles.contentContainer}>
+          {userData && userData.login ? (
+            <>
+              <View style={styles.userInfoSection}>
+                <ThemedText style={styles.userName}>{userData.nome}</ThemedText>
+                <ThemedText style={styles.userRole}>
+                  {userData.login && userData.login.isAdmin ? 'Administrador' : 'Usuário'}
+                </ThemedText>
               </View>
-            ))}
-          </View>
-        ))}
-      </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveButton} onPress={() => router.back()}>
-          <Text style={styles.saveButtonText}>Salvar Alterações</Text>
-        </TouchableOpacity>
-      </View>
+              {permissionGroups.map((group, groupIndex) => (
+                <View key={group.name} style={styles.permissionGroup}>
+                  <ThemedText style={styles.groupTitle}>{group.name}</ThemedText>
+                  
+                  {group.permissions.map((permission) => (
+                    <View key={permission.id} style={styles.permissionItem}>
+                      <View style={styles.permissionInfo}>
+                        <ThemedText style={styles.permissionName}>{permission.name}</ThemedText>
+                        <ThemedText style={styles.permissionDescription}>{permission.description}</ThemedText>
+                      </View>
+                      <Switch
+                        value={permission.enabled}
+                        onValueChange={() => togglePermission(groupIndex, permission.id)}
+                        trackColor={{ false: '#d1d1d1', true: '#a3d9ec' }}
+                        thumbColor={permission.enabled ? '#229dc9' : '#f4f3f4'}
+                        disabled={userData.login ? !userData.login.isAdmin : true} // Only admins can change permissions
+                      />
+                    </View>
+                  ))}
+                </View>
+              ))}
+
+              {!userData.login.isAdmin && (
+                <ThemedText style={styles.adminNote}>
+                  Apenas administradores podem alterar permissões.
+                </ThemedText>
+              )}
+            </>
+          ) : (
+            <ThemedText style={styles.noDataText}>
+              Nenhum dado de perfil de acesso encontrado.
+            </ThemedText>
+          )}
+        </ThemedView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -110,13 +240,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   headerGradient: {
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 20,
   },
   header: {
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   backButton: {
     marginRight: 15,
@@ -125,64 +257,72 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginLeft: 10,
   },
-  content: {
+  scrollContainer: {
     flex: 1,
-    padding: 20,
   },
-  group: {
-    backgroundColor: '#fff',
+  contentContainer: {
+    padding: 20,
     borderRadius: 10,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    margin: 15,
   },
-  groupTitle: {
+  userInfoSection: {
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  userName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+  },
+  userRole: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  permissionGroup: {
+    marginBottom: 20,
+  },
+  groupTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   permissionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   permissionInfo: {
     flex: 1,
-    marginRight: 15,
   },
   permissionName: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: '600',
   },
   permissionDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  adminNote: {
+    textAlign: 'center',
     fontSize: 14,
     color: '#666',
+    fontStyle: 'italic',
+    marginTop: 20,
   },
-  footer: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  saveButton: {
-    backgroundColor: '#229dc9',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#fff',
+  noDataText: {
+    textAlign: 'center',
     fontSize: 16,
-    fontWeight: '600',
+    color: '#666',
   },
 }); 

@@ -25,6 +25,16 @@ export async function getNotaById(id: string, token: string) {
   return useAxios(`/notas/${id}`, token, null, "get");
 }
 
+export async function getNotaByClientId(codcli: string, token: string) {
+  if (environment.appState === "OFFLINE") {
+    return mockedNota;
+  }
+  const response = await useAxios(`/notas/0?codcli=${codcli}`, token, null, "get");
+  console.log("response", response);
+  return response;
+}
+
+
 export async function updateNota(
   id: string,
   nota: Partial<NotasApp>,

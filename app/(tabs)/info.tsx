@@ -1,11 +1,68 @@
-import { StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Linking, View, ActivityIndicator, Alert } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
-import { Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Linking } from 'react-native';
+import ApiCaller from '../../backEnd/apiCaller';
+import { useRouter } from 'expo-router';
+
+const apiCaller = new ApiCaller();
 
 export default function InfoScreen() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [appInfo, setAppInfo] = useState({
+    version: '1.0.0',
+    buildNumber: '1',
+    lastUpdate: new Date().toLocaleDateString(),
+    developer: 'Isaac Façanha de Carvalho',
+    email: 'isaacicarvalho@gmail.com',
+    company: 'ADPG Sistemas',
+    website: 'https://adpgsistemas.com.br'
+  });
+
+  useEffect(() => {
+    // Get token from secure storage or context
+    // For now, using a dummy token
+    setToken('dummy-token');
+    fetchAppInfo();
+  }, []);
+
+  const fetchAppInfo = async () => {
+    if (!token) {
+      router.replace('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // In a real implementation, you would fetch app info from the backend
+      // For now, we're just using the default values
+      
+      // Example of how you might fetch app info in a real implementation:
+      // const info = await apiCaller.appInfoMethods.getAppInfo(token);
+      // setAppInfo(info);
+      
+      // Simulate API call
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error fetching app info:', error);
+      Alert.alert('Erro', 'Não foi possível carregar as informações do aplicativo.');
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#229dc9" />
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.headerMain}>
@@ -15,22 +72,42 @@ export default function InfoScreen() {
 
       <ThemedView style={styles.infoContainer}>
         <ThemedView style={styles.infoRow}>
-          <ThemedText style={styles.label}>Desenvolvido por:</ThemedText>
-          <ThemedText style={styles.value}>Isaac Façanha de Carvalho</ThemedText>
+          <ThemedText style={styles.label}>Versão:</ThemedText>
+          <ThemedText style={styles.value}>{appInfo.version} (Build {appInfo.buildNumber})</ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.infoRow}>
-          <ThemedText style={styles.label}>Formação:</ThemedText>
-          <ThemedText style={styles.value}>Análise e Desenvolvimento de Sistemas (UNICAMP)</ThemedText>
+          <ThemedText style={styles.label}>Última atualização:</ThemedText>
+          <ThemedText style={styles.value}>{appInfo.lastUpdate}</ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.infoRow}>
+          <ThemedText style={styles.label}>Desenvolvido por:</ThemedText>
+          <ThemedText style={styles.value}>{appInfo.developer}</ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.infoRow}>
+          <ThemedText style={styles.label}>Empresa:</ThemedText>
+          <ThemedText style={styles.value}>{appInfo.company}</ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.infoRow}>
           <ThemedText style={styles.label}>E-mail:</ThemedText>
           <ThemedText 
             style={[styles.value, styles.link]}
-            onPress={() => Linking.openURL('mailto:isaacicarvalho@gmail.com')}
+            onPress={() => Linking.openURL(`mailto:${appInfo.email}`)}
           >
-            isaacicarvalho@gmail.com
+            {appInfo.email}
+          </ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.infoRow}>
+          <ThemedText style={styles.label}>Website:</ThemedText>
+          <ThemedText 
+            style={[styles.value, styles.link]}
+            onPress={() => Linking.openURL(appInfo.website)}
+          >
+            {appInfo.website}
           </ThemedText>
         </ThemedView>
 
@@ -49,6 +126,13 @@ export default function InfoScreen() {
             onPress={() => Linking.openURL('https://facebook.com/isaac.carvalho')}
             style={styles.socialIcon}
           />
+          <Ionicons 
+            name="logo-github" 
+            size={24} 
+            color="#333"
+            onPress={() => Linking.openURL('https://github.com/isaaccarvalho')}
+            style={styles.socialIcon}
+          />
         </ThemedView>
       </ThemedView>
     </ThemedView>
@@ -58,80 +142,58 @@ export default function InfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    marginTop: 0,
-    backgroundColor: 'white',
+    padding: 20,
   },
-
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerMain: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#c9c9c9',
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    marginTop: 10,
-    paddingRight: 20,
-    flexWrap: 'wrap',
   },
-
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
-    flex: 1,
+    marginLeft: 10,
   },
-
   infoContainer: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 4,
+    backgroundColor: '#fff',
+    borderRadius: 10,
     padding: 20,
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-
   infoRow: {
-    marginBottom: 16,
-    backgroundColor:'#f5f5f5'
+    flexDirection: 'row',
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-
   label: {
-    fontSize: 14,
+    flex: 1,
+    fontWeight: 'bold',
     color: '#666',
-    marginBottom: 4,
   },
-
   value: {
-    fontSize: 16,
-    color: '#000',
-    fontWeight: '500',
+    flex: 2,
   },
-
   link: {
-    color: '#0a7ea4',
+    color: '#229dc9',
     textDecorationLine: 'underline',
   },
-
   socialContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 20,
-    gap: 16,
-    backgroundColor:'#f5f5f5'
   },
-
   socialIcon: {
-    padding: 8,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    marginHorizontal: 15,
   },
 }); 

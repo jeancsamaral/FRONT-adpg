@@ -1,63 +1,163 @@
-import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ReceberApp, RecebidosApp, NotasApp } from '../../backEnd/interfaces';
+import ApiCaller from '../../backEnd/apiCaller';
+import { useAuth } from '../context/AuthContext';
 
-// Dados de exemplo
-const titulosData = {
+const apiCaller = new ApiCaller();
+
+// Sample data structure for the financial summary
+interface FinancialSummary {
   ultimaCompra: {
-    data: '15/03/2024',
-    valor: 'R$ 25.000,00'
-  },
+    data: Date | null;
+    valor: number;
+  };
   recebidos: {
-    total: 'R$ 150.000,00',
-    quantidade: 12
-  },
+    total: number;
+    quantidade: number;
+  };
   aReceber: {
-    total: 'R$ 75.000,00',
-    quantidade: 5
-  },
-  titulosRecebidos: [
-    {
-      previsto: '10/02/2024',
-      realizado: '10/02/2024',
-      valor: 'R$ 12.500,00',
-      numeroNota: '001234',
-      titulo: 'NF-001234/1'
-    },
-    {
-      previsto: '15/02/2024',
-      realizado: '16/02/2024',
-      valor: 'R$ 12.500,00',
-      numeroNota: '001235',
-      titulo: 'NF-001235/1'
-    }
-  ],
-  titulosAReceber: [
-    {
-      previsto: '15/04/2024',
-      realizado: '-',
-      valor: 'R$ 15.000,00',
-      numeroNota: '001236',
-      titulo: 'NF-001236/1'
-    },
-    {
-      previsto: '30/04/2024',
-      realizado: '-',
-      valor: 'R$ 15.000,00',
-      numeroNota: '001237',
-      titulo: 'NF-001237/1'
-    }
-  ]
-};
+    total: number;
+    quantidade: number;
+  };
+}
 
 export default function ClienteTitulosScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<'recebidos' | 'aReceber'>('recebidos');
+  const [loading, setLoading] = useState(true);
+  const [titulosRecebidos, setTitulosRecebidos] = useState<RecebidosApp[]>([]);
+  const [titulosAReceber, setTitulosAReceber] = useState<ReceberApp[]>([]);
+  const [summary, setSummary] = useState<FinancialSummary>({
+    ultimaCompra: {
+      data: null,
+      valor: 0
+    },
+    recebidos: {
+      total: 0,
+      quantidade: 0
+    },
+    aReceber: {
+      total: 0,
+      quantidade: 0
+    }
+  });
+
+  useEffect(() => {
+    fetchClienteTitulos();
+  }, []);
+
+  const fetchClienteTitulos = async () => {
+    if (!token || !params.codcli) {
+      Alert.alert('Erro', 'Informações do cliente não encontradas.');
+      router.back();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Get received payments
+      const recebidos = await apiCaller.recebidosAppMethods.getRecebidosAppByCodcli(
+        params.codcli as string,
+        1, // page
+        100, // limit
+        token
+      );
+      
+      // Get pending payments
+      const aReceber = await apiCaller.receberAppMethods.getReceberAppByCodcli(
+        params.codcli as string,
+        1, // page
+        100, // limit
+        token
+      );
+      
+      // Get latest purchase (note)
+      const allNotas = await apiCaller.notasMethods.getAllNotas(
+        1, // page
+        100, // limit
+        token
+      );
+      
+      // Filter notes for the current client and sort by emission date (descending)
+      const clienteNotas = allNotas
+        .filter((nota: NotasApp) => nota.cliente && nota.codcli === parseInt(params.codcli as string))
+        .sort((a: NotasApp, b: NotasApp) => new Date(b.emissao).getTime() - new Date(a.emissao).getTime());
+      
+      // Calculate summary
+      const recebidosTotal = recebidos.reduce((sum: number, item: RecebidosApp) => sum + item.valor, 0);
+      const aReceberTotal = aReceber.reduce((sum: number, item: ReceberApp) => sum + item.valor, 0);
+      
+      // Update state
+      setTitulosRecebidos(recebidos);
+      setTitulosAReceber(aReceber);
+      setSummary({
+        ultimaCompra: {
+          data: clienteNotas.length > 0 ? new Date(clienteNotas[0].emissao) : null,
+          valor: clienteNotas.length > 0 ? clienteNotas[0].totalnota : 0
+        },
+        recebidos: {
+          total: recebidosTotal,
+          quantidade: recebidos.length
+        },
+        aReceber: {
+          total: aReceberTotal,
+          quantidade: aReceber.length
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching client financial data:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados financeiros do cliente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  // Format date
+  const formatDate = (date: Date | null) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('pt-BR');
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+          colors={['#229dc9', '#1a7fa3']}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+              </TouchableOpacity>
+              <MaterialCommunityIcons name="cash-multiple" size={32} color="#fff" />
+              <ThemedText style={styles.title}>Títulos do Cliente</ThemedText>
+            </View>
+          </View>
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#229dc9" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,37 +170,39 @@ export default function ClienteTitulosScreen() {
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
-            <MaterialCommunityIcons name="file-document-outline" size={24} color="#fff" />
-            <ThemedText style={styles.title}>Títulos</ThemedText>
+            <MaterialCommunityIcons name="cash-multiple" size={32} color="#fff" />
+            <ThemedText style={styles.title}>Títulos do Cliente</ThemedText>
           </View>
         </View>
       </LinearGradient>
 
       <ScrollView style={styles.scrollContainer}>
         <ThemedView style={styles.contentContainer}>
+          <ThemedText style={styles.clientName}>{params.razao || 'Cliente'}</ThemedText>
+          
           <ThemedView style={styles.summaryContainer}>
-            <View style={styles.summaryCard}>
+            <ThemedView style={styles.summaryCard}>
               <ThemedText style={styles.summaryTitle}>Última Compra</ThemedText>
-              <ThemedText style={styles.summaryValue}>{titulosData.ultimaCompra.valor}</ThemedText>
-              <ThemedText style={styles.summarySubtext}>{titulosData.ultimaCompra.data}</ThemedText>
-            </View>
-
-            <View style={styles.summaryCard}>
+              <ThemedText style={styles.summaryValue}>{formatCurrency(summary.ultimaCompra.valor)}</ThemedText>
+              <ThemedText style={styles.summarySubtitle}>{formatDate(summary.ultimaCompra.data)}</ThemedText>
+            </ThemedView>
+            
+            <ThemedView style={styles.summaryCard}>
               <ThemedText style={styles.summaryTitle}>Recebidos</ThemedText>
-              <ThemedText style={styles.summaryValue}>{titulosData.recebidos.total}</ThemedText>
-              <ThemedText style={styles.summarySubtext}>{titulosData.recebidos.quantidade} títulos</ThemedText>
-            </View>
-
-            <View style={styles.summaryCard}>
+              <ThemedText style={styles.summaryValue}>{formatCurrency(summary.recebidos.total)}</ThemedText>
+              <ThemedText style={styles.summarySubtitle}>{summary.recebidos.quantidade} título(s)</ThemedText>
+            </ThemedView>
+            
+            <ThemedView style={styles.summaryCard}>
               <ThemedText style={styles.summaryTitle}>A Receber</ThemedText>
-              <ThemedText style={styles.summaryValue}>{titulosData.aReceber.total}</ThemedText>
-              <ThemedText style={styles.summarySubtext}>{titulosData.aReceber.quantidade} títulos</ThemedText>
-            </View>
+              <ThemedText style={styles.summaryValue}>{formatCurrency(summary.aReceber.total)}</ThemedText>
+              <ThemedText style={styles.summarySubtitle}>{summary.aReceber.quantidade} título(s)</ThemedText>
+            </ThemedView>
           </ThemedView>
-
-          <View style={styles.tabContainer}>
+          
+          <ThemedView style={styles.tabContainer}>
             <TouchableOpacity 
-              style={[styles.tab, activeTab === 'recebidos' && styles.activeTab]}
+              style={[styles.tabButton, activeTab === 'recebidos' && styles.activeTabButton]}
               onPress={() => setActiveTab('recebidos')}
             >
               <ThemedText style={[styles.tabText, activeTab === 'recebidos' && styles.activeTabText]}>
@@ -108,45 +210,76 @@ export default function ClienteTitulosScreen() {
               </ThemedText>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.tab, activeTab === 'aReceber' && styles.activeTab]}
+              style={[styles.tabButton, activeTab === 'aReceber' && styles.activeTabButton]}
               onPress={() => setActiveTab('aReceber')}
             >
               <ThemedText style={[styles.tabText, activeTab === 'aReceber' && styles.activeTabText]}>
                 A Receber
               </ThemedText>
             </TouchableOpacity>
-          </View>
-
-          <ThemedView style={styles.titulosContainer}>
-            {(activeTab === 'recebidos' ? titulosData.titulosRecebidos : titulosData.titulosAReceber).map((titulo, index) => (
-              <ThemedView key={index} style={styles.tituloCard}>
-                <View style={styles.tituloHeader}>
-                  <ThemedText style={styles.tituloNumero}>{titulo.titulo}</ThemedText>
-                  <ThemedText style={styles.tituloValor}>{titulo.valor}</ThemedText>
-                </View>
-                
-                <View style={styles.tituloDetails}>
-                  <View style={styles.detailRow}>
-                    <View style={styles.detailItem}>
-                      <ThemedText style={styles.detailLabel}>Previsto</ThemedText>
-                      <ThemedText style={styles.detailValue}>{titulo.previsto}</ThemedText>
-                    </View>
-                    <View style={styles.detailItem}>
-                      <ThemedText style={styles.detailLabel}>Realizado</ThemedText>
-                      <ThemedText style={styles.detailValue}>{titulo.realizado}</ThemedText>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.detailRow}>
-                    <View style={styles.detailItem}>
-                      <ThemedText style={styles.detailLabel}>Nota Fiscal</ThemedText>
-                      <ThemedText style={styles.detailValue}>{titulo.numeroNota}</ThemedText>
-                    </View>
-                  </View>
-                </View>
-              </ThemedView>
-            ))}
           </ThemedView>
+          
+          {activeTab === 'recebidos' ? (
+            <ThemedView style={styles.titulosContainer}>
+              {titulosRecebidos.length > 0 ? (
+                titulosRecebidos.map((titulo, index) => (
+                  <ThemedView key={index} style={styles.tituloCard}>
+                    <View style={styles.tituloHeader}>
+                      <ThemedText style={styles.tituloTitle}>{titulo.titulo}</ThemedText>
+                      <ThemedText style={styles.tituloValue}>{formatCurrency(titulo.valor)}</ThemedText>
+                    </View>
+                    <View style={styles.tituloDetails}>
+                      <View style={styles.tituloDetail}>
+                        <ThemedText style={styles.detailLabel}>Nota</ThemedText>
+                        <ThemedText style={styles.detailValue}>{titulo.nota}</ThemedText>
+                      </View>
+                      <View style={styles.tituloDetail}>
+                        <ThemedText style={styles.detailLabel}>Previsto</ThemedText>
+                        <ThemedText style={styles.detailValue}>{formatDate(titulo.previsto)}</ThemedText>
+                      </View>
+                      <View style={styles.tituloDetail}>
+                        <ThemedText style={styles.detailLabel}>Realizado</ThemedText>
+                        <ThemedText style={styles.detailValue}>{formatDate(titulo.realizado)}</ThemedText>
+                      </View>
+                    </View>
+                  </ThemedView>
+                ))
+              ) : (
+                <ThemedView style={styles.emptyState}>
+                  <MaterialCommunityIcons name="cash-remove" size={48} color="#ccc" />
+                  <ThemedText style={styles.emptyStateText}>Nenhum título recebido</ThemedText>
+                </ThemedView>
+              )}
+            </ThemedView>
+          ) : (
+            <ThemedView style={styles.titulosContainer}>
+              {titulosAReceber.length > 0 ? (
+                titulosAReceber.map((titulo, index) => (
+                  <ThemedView key={index} style={styles.tituloCard}>
+                    <View style={styles.tituloHeader}>
+                      <ThemedText style={styles.tituloTitle}>{titulo.titulo}</ThemedText>
+                      <ThemedText style={styles.tituloValue}>{formatCurrency(titulo.valor)}</ThemedText>
+                    </View>
+                    <View style={styles.tituloDetails}>
+                      <View style={styles.tituloDetail}>
+                        <ThemedText style={styles.detailLabel}>Nota</ThemedText>
+                        <ThemedText style={styles.detailValue}>{titulo.nota}</ThemedText>
+                      </View>
+                      <View style={styles.tituloDetail}>
+                        <ThemedText style={styles.detailLabel}>Previsto</ThemedText>
+                        <ThemedText style={styles.detailValue}>{formatDate(titulo.previsto)}</ThemedText>
+                      </View>
+                    </View>
+                  </ThemedView>
+                ))
+              ) : (
+                <ThemedView style={styles.emptyState}>
+                  <MaterialCommunityIcons name="cash-lock" size={48} color="#ccc" />
+                  <ThemedText style={styles.emptyStateText}>Nenhum título a receber</ThemedText>
+                </ThemedView>
+              )}
+            </ThemedView>
+          )}
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
@@ -157,32 +290,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    paddingBottom: 60,
   },
   headerGradient: {
-    paddingTop: 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
   backButton: {
-    padding: 8,
+    marginRight: 15,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginLeft: 10,
   },
   scrollContainer: {
     flex: 1,
@@ -190,96 +317,93 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 20,
   },
+  clientName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
   summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   summaryCard: {
+    flex: 1,
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    marginBottom: 12,
+    borderRadius: 10,
+    padding: 15,
+    marginHorizontal: 5,
+    alignItems: 'center',
   },
   summaryTitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
-    marginBottom: 4,
+    marginBottom: 5,
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#229dc9',
-    marginBottom: 4,
   },
-  summarySubtext: {
+  summarySubtitle: {
     fontSize: 12,
     color: '#666',
+    marginTop: 5,
   },
   tabContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 4,
+    borderRadius: 10,
+    marginBottom: 20,
+    overflow: 'hidden',
   },
-  tab: {
+  tabButton: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
   },
-  activeTab: {
+  activeTabButton: {
     backgroundColor: '#229dc9',
   },
   tabText: {
-    fontSize: 16,
+    fontWeight: '500',
     color: '#666',
   },
   activeTabText: {
     color: '#fff',
-    fontWeight: 'bold',
   },
   titulosContainer: {
-    gap: 16,
+    marginBottom: 20,
   },
   tituloCard: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
   },
   tituloHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  tituloNumero: {
+  tituloTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  tituloValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#229dc9',
   },
-  tituloValor: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
   tituloDetails: {
-    gap: 12,
-  },
-  detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  detailItem: {
+  tituloDetail: {
     flex: 1,
   },
   detailLabel: {
@@ -288,6 +412,23 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 14,
-    color: '#333',
+    fontWeight: '500',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  emptyStateText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

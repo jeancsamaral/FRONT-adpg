@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { NotasApp, NotasApp_Itens } from '../../backEnd/interfaces';
+import ApiCaller from '../../backEnd/apiCaller';
+import { useAuth } from '../context/AuthContext';
 
-// Dados de exemplo
+const apiCaller = new ApiCaller();
+
+// Sample data for fallback
 const vendasData = [
   {
     nota: '1407',
@@ -55,11 +60,88 @@ const vendasData = [
 export default function ClienteVendasScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { token } = useAuth();
   const [expandedNota, setExpandedNota] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notas, setNotas] = useState<NotasApp[]>([]);
+
+  useEffect(() => {
+    fetchClienteVendas();
+  }, []);
+
+  const fetchClienteVendas = async () => {
+    if (!token || !params.codcli) {
+      Alert.alert('Erro', 'Informações do cliente não encontradas.');
+      router.back();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Get all notes and filter by client code
+      const allNotas = await apiCaller.notasMethods.getNotaByClientId(
+        params.codcli as string,
+        token
+      );
+
+      console.log("allNotas", allNotas);
+      
+      // Filter notes for the current client
+      const clienteNotas = allNotas.filter((nota: NotasApp) => 
+        nota.cliente && nota.codcli === parseInt(params.codcli as string)
+      );
+
+      console.log("clienteNotas", clienteNotas);
+      
+      setNotas(clienteNotas);
+    } catch (error) {
+      console.error('Error fetching client sales:', error);
+      Alert.alert('Erro', 'Não foi possível carregar as vendas do cliente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleExpand = (nota: string) => {
     setExpandedNota(expandedNota === nota ? null : nota);
   };
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  // Format date
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('pt-BR');
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+          colors={['#229dc9', '#1a7fa3']}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+              </TouchableOpacity>
+              <MaterialCommunityIcons name="file-document-multiple" size={32} color="#fff" />
+              <ThemedText style={styles.title}>Vendas do Cliente</ThemedText>
+            </View>
+          </View>
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#229dc9" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,63 +154,77 @@ export default function ClienteVendasScreen() {
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
-            <MaterialCommunityIcons name="cart-outline" size={24} color="#fff" />
-            <ThemedText style={styles.title}>Vendas</ThemedText>
+            <MaterialCommunityIcons name="file-document-multiple" size={32} color="#fff" />
+            <ThemedText style={styles.title}>Vendas do Cliente</ThemedText>
           </View>
         </View>
       </LinearGradient>
 
       <ScrollView style={styles.scrollContainer}>
         <ThemedView style={styles.contentContainer}>
-          {vendasData.map((venda, index) => (
-            <ThemedView key={index} style={styles.vendaCard}>
-              <TouchableOpacity 
-                style={styles.vendaHeader}
-                onPress={() => toggleExpand(venda.nota)}
-              >
-                <View style={styles.vendaInfo}>
-                  <ThemedText style={styles.notaText}>Nota {venda.nota}</ThemedText>
-                  <View style={styles.vendaDetails}>
-                    <ThemedText style={styles.dataText}>{venda.dataEmissao}</ThemedText>
-                    <ThemedText style={styles.valorText}>{venda.valor}</ThemedText>
+          <ThemedText style={styles.clientName}>{params.razao || 'Cliente'}</ThemedText>
+          
+          {notas.length > 0 ? (
+            notas.map((notaItem) => (
+              <ThemedView key={notaItem.codvenda.toString()} style={styles.notaCard}>
+                <TouchableOpacity 
+                  style={styles.notaHeader}
+                  onPress={() => toggleExpand(notaItem.codvenda.toString())}
+                >
+                  <View style={styles.notaInfo}>
+                    <ThemedText style={styles.notaNumber}>Nota: {notaItem.nota || notaItem.codvenda}</ThemedText>
+                    <ThemedText style={styles.notaDate}>Emissão: {formatDate(notaItem.emissao)}</ThemedText>
                   </View>
-                </View>
-                <MaterialCommunityIcons 
-                  name={expandedNota === venda.nota ? "chevron-up" : "chevron-down"} 
-                  size={24} 
-                  color="#229dc9" 
-                />
-              </TouchableOpacity>
-
-              {expandedNota === venda.nota && (
-                <View style={styles.produtosContainer}>
-                  <ThemedText style={styles.produtosTitle}>Produtos</ThemedText>
-                  {venda.produtos.map((produto, prodIndex) => (
-                    <View key={prodIndex} style={styles.produtoItem}>
-                      <View style={styles.produtoHeader}>
-                        <ThemedText style={styles.produtoCodigo}>{produto.codigo}</ThemedText>
-                        <ThemedText style={styles.produtoDescricao}>{produto.descricao}</ThemedText>
-                      </View>
-                      <View style={styles.produtoDetails}>
-                        <View style={styles.detailColumn}>
-                          <ThemedText style={styles.detailLabel}>Quantidade</ThemedText>
-                          <ThemedText style={styles.detailValue}>{produto.quantidade}</ThemedText>
+                  <View style={styles.notaValue}>
+                    <ThemedText style={styles.notaValueText}>{formatCurrency(notaItem.totalnota)}</ThemedText>
+                    <MaterialCommunityIcons 
+                      name={expandedNota === notaItem.codvenda.toString() ? "chevron-up" : "chevron-down"} 
+                      size={24} 
+                      color="#229dc9" 
+                    />
+                  </View>
+                </TouchableOpacity>
+                
+                {expandedNota === notaItem.codvenda.toString() && (
+                  <View style={styles.produtosContainer}>
+                    <ThemedText style={styles.produtosTitle}>Produtos</ThemedText>
+                    
+                    {notaItem.itens && notaItem.itens.length > 0 ? (
+                      notaItem.itens.map((item, index) => (
+                        <View key={index} style={styles.produtoItem}>
+                          <View style={styles.produtoHeader}>
+                            <ThemedText style={styles.produtoCodigo}>{item.codproduto}</ThemedText>
+                            <ThemedText style={styles.produtoDescricao}>{item.descricao}</ThemedText>
+                          </View>
+                          <View style={styles.produtoDetails}>
+                            <View style={styles.produtoDetail}>
+                              <ThemedText style={styles.detailLabel}>Qtd:</ThemedText>
+                              <ThemedText style={styles.detailValue}>{item.quantidade}</ThemedText>
+                            </View>
+                            <View style={styles.produtoDetail}>
+                              <ThemedText style={styles.detailLabel}>Valor:</ThemedText>
+                              <ThemedText style={styles.detailValue}>{item.valor}</ThemedText>
+                            </View>
+                            <View style={styles.produtoDetail}>
+                              <ThemedText style={styles.detailLabel}>Total:</ThemedText>
+                              <ThemedText style={styles.detailValue}>{item.total}</ThemedText>
+                            </View>
+                          </View>
                         </View>
-                        <View style={styles.detailColumn}>
-                          <ThemedText style={styles.detailLabel}>Preço</ThemedText>
-                          <ThemedText style={styles.detailValue}>{produto.preco}</ThemedText>
-                        </View>
-                        <View style={styles.detailColumn}>
-                          <ThemedText style={styles.detailLabel}>Total</ThemedText>
-                          <ThemedText style={styles.detailValue}>{produto.total}</ThemedText>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
+                      ))
+                    ) : (
+                      <ThemedText style={styles.noProdutos}>Nenhum produto encontrado</ThemedText>
+                    )}
+                  </View>
+                )}
+              </ThemedView>
+            ))
+          ) : (
+            <ThemedView style={styles.emptyState}>
+              <MaterialCommunityIcons name="file-document-outline" size={48} color="#ccc" />
+              <ThemedText style={styles.emptyStateText}>Nenhuma venda encontrada</ThemedText>
             </ThemedView>
-          ))}
+          )}
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
@@ -139,115 +235,106 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    paddingBottom: 60,
   },
   headerGradient: {
-    paddingTop: 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
   backButton: {
-    padding: 8,
+    marginRight: 15,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginLeft: 10,
   },
   scrollContainer: {
     flex: 1,
   },
   contentContainer: {
     padding: 20,
-    gap: 16,
   },
-  vendaCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  vendaHeader: {
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  vendaInfo: {
-    flex: 1,
-  },
-  notaText: {
+  clientName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#229dc9',
-    marginBottom: 4,
+    marginBottom: 20,
   },
-  vendaDetails: {
+  notaCard: {
+    marginBottom: 15,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  notaHeader: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  dataText: {
+  notaInfo: {
+    flex: 1,
+  },
+  notaNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  notaDate: {
     fontSize: 14,
     color: '#666',
+    marginTop: 5,
   },
-  valorText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+  notaValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notaValueText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#229dc9',
+    marginRight: 5,
   },
   produtosContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    padding: 16,
+    padding: 15,
+    backgroundColor: '#f9f9f9',
   },
   produtosTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
   produtoItem: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    borderLeftWidth: 3,
+    borderLeftColor: '#229dc9',
   },
   produtoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   produtoCodigo: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#229dc9',
-    marginRight: 8,
+    color: '#666',
   },
   produtoDescricao: {
-    fontSize: 14,
-    color: '#333',
-    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
   },
   produtoDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  detailColumn: {
+  produtoDetail: {
     flex: 1,
   },
   detailLabel: {
@@ -256,6 +343,28 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 14,
-    color: '#333',
+    fontWeight: '500',
+  },
+  noProdutos: {
+    textAlign: 'center',
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  emptyStateText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

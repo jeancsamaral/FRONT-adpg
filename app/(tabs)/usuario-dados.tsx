@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,87 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, Href } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { UsuariosApp, UsuarioAuth } from '../../backEnd/interfaces';
+import ApiCaller from '../../backEnd/apiCaller';
+import { ThemedView } from '../components/ThemedView';
+import { ThemedText } from '../components/ThemedText';
+import { useAuth } from '../context/AuthContext';
+ 
+const apiCaller = new ApiCaller();
 
 export default function UserDataScreen() {
   const router = useRouter();
-  const userData = {
-    nome: 'João Silva',
-    email: 'joao.silva@email.com',
-    login: 'joaosilva',
+  const params = useLocalSearchParams();
+  const { token, user } = useAuth();
+  const [userData, setUserData] = useState<UsuariosApp | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (token) {
+      fetchUserData();
+    } else {
+      router.replace('/login');
+    }
+  }, [token]);
+
+  const fetchUserData = async () => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // If we have a user ID from the auth context, use it to fetch specific user data
+      if (user && user.id) {
+        const users = await apiCaller.userMethods.getAllUsers(1, 100, token);
+        const currentUser = users.find(u => u.id === user.id);
+        if (currentUser) {
+          setUserData(currentUser);
+        } else {
+          // If user not found in the list, use the first one as fallback
+          setUserData(users[0]);
+        }
+      } else {
+        // Fallback to getting the first user
+        const users = await apiCaller.userMethods.getAllUsers(1, 10, token);
+        if (users && users.length > 0) {
+          setUserData(users[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados do usuário.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleUpdateUser = async (updatedData: Partial<UsuariosApp>) => {
+    if (!token || !userData) return;
+
+    try {
+      await apiCaller.userMethods.updateUser(userData.id.toString(), updatedData, token);
+      Alert.alert('Sucesso', 'Dados atualizados com sucesso!');
+      fetchUserData(); // Refresh data
+    } catch (error) {
+      console.error('Error updating user data:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar os dados do usuário.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#229dc9" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,30 +95,65 @@ export default function UserDataScreen() {
         style={styles.headerGradient}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Dados do Usuário</Text>
+          <View style={styles.headerContent}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+            </TouchableOpacity>
+            <MaterialCommunityIcons name="account" size={32} color="#fff" />
+            <ThemedText style={styles.title}>Meus Dados</ThemedText>
+          </View>
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.form}>
-          <View style={styles.infoGroup}>
-            <Text style={styles.label}>Nome Completo</Text>
-            <Text style={styles.value}>{userData.nome}</Text>
-          </View>
+      <ScrollView style={styles.scrollContainer}>
+        <ThemedView style={styles.contentContainer}>
+          {userData ? (
+            <>
+              <View style={styles.userInfoSection}>
+                <ThemedText style={styles.sectionTitle}>Informações Pessoais</ThemedText>
+                <View style={styles.infoRow}>
+                  <ThemedText style={styles.label}>Nome:</ThemedText>
+                  <ThemedText style={styles.value}>{userData.nome}</ThemedText>
+                </View>
+                <View style={styles.infoRow}>
+                  <ThemedText style={styles.label}>Código:</ThemedText>
+                  <ThemedText style={styles.value}>{userData.codusr}</ThemedText>
+                </View>
+                <View style={styles.infoRow}>
+                  <ThemedText style={styles.label}>Supervisor:</ThemedText>
+                  <ThemedText style={styles.value}>{userData.supervisor}</ThemedText>
+                </View>
+                {userData.login && (
+                  <View style={styles.infoRow}>
+                    <ThemedText style={styles.label}>Login:</ThemedText>
+                    <ThemedText style={styles.value}>{userData.login.login}</ThemedText>
+                  </View>
+                )}
+              </View>
 
-          <View style={styles.infoGroup}>
-            <Text style={styles.label}>E-mail</Text>
-            <Text style={styles.value}>{userData.email}</Text>
-          </View>
+              <TouchableOpacity 
+                style={styles.editButton}
+                onPress={() => {
+                  // Navigate to edit profile screen or show edit form
+                  Alert.alert('Editar', 'Funcionalidade de edição será implementada em breve.');
+                }}
+              >
+                <MaterialCommunityIcons name="pencil" size={20} color="#fff" />
+                <ThemedText style={styles.buttonText}>Editar Perfil</ThemedText>
+              </TouchableOpacity>
 
-          <View style={styles.infoGroup}>
-            <Text style={styles.label}>Login</Text>
-            <Text style={styles.value}>{userData.login}</Text>
-          </View>
-        </View>
+              <TouchableOpacity 
+                style={styles.accessButton}
+                onPress={() => router.push('/(tabs)/perfis-acesso' as Href<string>)}
+              >
+                <MaterialCommunityIcons name="shield-account" size={20} color="#fff" />
+                <ThemedText style={styles.buttonText}>Perfis de Acesso</ThemedText>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <ThemedText style={styles.noDataText}>Nenhum dado de usuário encontrado.</ThemedText>
+          )}
+        </ThemedView>
       </ScrollView>
     </SafeAreaView>
   );
@@ -61,13 +165,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   headerGradient: {
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 20,
   },
   header: {
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   backButton: {
     marginRight: 15,
@@ -76,35 +182,63 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginLeft: 10,
   },
-  content: {
+  scrollContainer: {
     flex: 1,
-    padding: 20,
   },
-  form: {
-    backgroundColor: '#fff',
+  contentContainer: {
+    padding: 20,
     borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    margin: 15,
   },
-  infoGroup: {
+  userInfoSection: {
     marginBottom: 20,
-    paddingBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    flex: 1,
+    fontWeight: '600',
   },
   value: {
+    flex: 2,
+  },
+  editButton: {
+    backgroundColor: '#229dc9',
+    padding: 15,
+    borderRadius: 5,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  accessButton: {
+    backgroundColor: '#1a7fa3',
+    padding: 15,
+    borderRadius: 5,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  noDataText: {
+    textAlign: 'center',
     fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    color: '#666',
   },
 }); 

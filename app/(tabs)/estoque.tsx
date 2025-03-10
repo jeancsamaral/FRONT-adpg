@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput, Modal } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
@@ -18,6 +18,7 @@ const productData = [
     reservado: "0.00",
     comprado: "0.00",
     disponivel: "0.00",
+    grupo: "1",
   },
   {
     codigo: "PA00002",
@@ -29,6 +30,7 @@ const productData = [
     reservado: "0.00",
     comprado: "0.00",
     disponivel: "0.00",
+    grupo: "2",
   },
 ];
 
@@ -58,6 +60,7 @@ export default function EstoqueScreen() {
     codigo: '',
     descricao: ''
   });
+  const [loading, setLoading] = useState(false);
 
   // Função para filtrar os produtos
   const filteredProducts = React.useMemo(() => {
@@ -88,7 +91,10 @@ export default function EstoqueScreen() {
   const handleProductPress = (product: any) => {
     router.push({
       pathname: "/produto-detalhes",
-      params: product,
+      params: { 
+        id: product.codigo,
+        ...product 
+      },
     });
   };
 
@@ -202,13 +208,13 @@ export default function EstoqueScreen() {
             <ThemedView style={styles.table}>
               {filteredProducts.map((item) => (
                 <TouchableOpacity
-                  key={item.id}
+                  key={item.codigo}
                   onPress={() => handleProductPress(item)}
                 >
                   <ThemedView style={styles.tableRow}>
                     <View style={styles.rowHeader}>
                       <ThemedText style={styles.codigo}>
-                        {item.codprod}
+                        {item.codigo}
                       </ThemedText>
                       <ThemedText style={styles.descricao}>
                         {item.descricao}
@@ -220,7 +226,7 @@ export default function EstoqueScreen() {
                         <View style={styles.cell}>
                           <ThemedText style={styles.label}>Un.</ThemedText>
                           <ThemedText style={styles.value}>
-                            {item.unidadeDePeso}
+                            {item.un}
                           </ThemedText>
                         </View>
                         <View style={styles.cell}>
@@ -234,7 +240,7 @@ export default function EstoqueScreen() {
                         <View style={styles.cell}>
                           <ThemedText style={styles.label}>Venda</ThemedText>
                           <ThemedText style={styles.value}>
-                            {item.preco}
+                            {item.venda}
                           </ThemedText>
                         </View>
                         <View style={styles.cell}>
@@ -245,7 +251,7 @@ export default function EstoqueScreen() {
                         </View>
                       </View>
                     </View>
-
+                  </ThemedView>
                   <View style={styles.statusContainer}>
                     <View style={styles.cell}>
                       <ThemedText style={[styles.label, styles.redText]}>Reservado</ThemedText>
@@ -260,10 +266,10 @@ export default function EstoqueScreen() {
                       <ThemedText style={styles.blueText}>{item.disponivel}</ThemedText>
                     </View>
                   </View>
-                </ThemedView>
-              </TouchableOpacity>
-            ))}
-          </ThemedView>
+                </TouchableOpacity>
+              ))}
+            </ThemedView>
+          )}
         </ThemedView>
       </ScrollView>
 

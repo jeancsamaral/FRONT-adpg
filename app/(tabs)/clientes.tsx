@@ -1,42 +1,81 @@
-import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useRouter } from 'expo-router';
+import { ClientesApp } from '../../backEnd/interfaces';
+import ApiCaller from '../../backEnd/apiCaller';
+import { useAuth } from '../context/AuthContext';
 
-const clientData = [
+const apiCaller = new ApiCaller();
+
+// Sample data for fallback
+const clientData: ClientesApp[] = [
   {
-    codigo: '00002',
-    razaoSocial: 'MEYERMAN BRASIL IND COM LTDA',
+    id: 1,
+    codcli: 2,
+    razao: 'MEYERMAN BRASIL IND COM LTDA',
+    fantasia: 'MEYERMAN',
     cidade: 'SAO BERNARDO DO CAMPO',
-    uf: 'SP',
-    telefone: '11 4178-7444',
+    estado: 'SP',
+    fone: '11 4178-7444',
     contato: '-',
     email: 'meyerman@meyerman.com.br',
+    pessoa: 'J',
+    cnpj_cpf: '12.345.678/0001-90',
+    ie_rg: '123.456.789.000',
+    endereco: 'Rua Example, 123',
+    bairro: 'Centro',
+    cep: '12345-678',
+    pais: 'Brasil',
+    inativo: 'N',
+    excluido: 'N',
+    registro: 1,
+    abertura: new Date(),
+    clidesde: new Date(),
+    transporta: '',
+    icms: 0,
+    itens: [],
+    memo: undefined,
+    notas: [],
+    recebidosApp: [],
+    receberApp: []
   },
   {
-    codigo: '00003',
-    razaoSocial: 'INDUSTRIA QUIMICA LTDA',
+    id: 2,
+    codcli: 3,
+    razao: 'INDUSTRIA QUIMICA LTDA',
+    fantasia: 'QUIMICA',
     cidade: 'GUARULHOS',
-    uf: 'SP',
-    telefone: '11 2222-3333',
+    estado: 'SP',
+    fone: '11 2222-3333',
     contato: 'João Silva',
     email: 'contato@quimica.com.br',
-  },
-  {
-    codigo: '00004',
-    razaoSocial: 'PRODUTOS QUÍMICOS SA',
-    cidade: 'CAMPINAS',
-    uf: 'SP',
-    telefone: '19 3333-4444',
-    contato: 'Maria Santos',
-    email: 'maria@pquimicos.com.br',
+    pessoa: 'J',
+    cnpj_cpf: '23.456.789/0001-01',
+    ie_rg: '234.567.890.001',
+    endereco: 'Av Industrial, 456',
+    bairro: 'Distrito Industrial',
+    cep: '07123-456',
+    pais: 'Brasil',
+    inativo: 'N',
+    excluido: 'N',
+    registro: 2,
+    abertura: new Date(),
+    clidesde: new Date(),
+    transporta: '',
+    icms: 0,
+    itens: [],
+    memo: undefined,
+    notas: [],
+    recebidosApp: [],
+    receberApp: []
   }
 ];
 
-// Adicione essa interface para tipar os filtros
+// Interface for filters
 interface Filters {
   codigo: boolean;
   razaoSocial: boolean;
@@ -48,7 +87,9 @@ interface Filters {
 
 export default function ClientesScreen() {
   const router = useRouter();
-  const [clients, setClients] = useState(clientData);
+  const { token } = useAuth();
+  const [clients, setClients] = useState<ClientesApp[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -59,28 +100,129 @@ export default function ClientesScreen() {
     telefone: true,
     email: true,
   });
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 20;
 
-  // Função para filtrar os clientes baseado na busca e filtros
+  useEffect(() => {
+    fetchClients();
+  }, [page]);
+
+  const fetchClients = async () => {
+    if (!token) {
+      Alert.alert('Erro', 'Você precisa estar logado para acessar esta página.');
+      router.replace('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await apiCaller.clientMethods.getClientWithFilter(
+        page,
+        limit,
+        token
+      );
+      
+      if (response.length === 0) {
+        setHasMore(false);
+      }
+      
+      if (page === 1) {
+        setClients(response);
+      } else {
+        setClients(prev => [...prev, ...response]);
+      }
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os clientes.');
+      // Use sample data as fallback
+      setClients(clientData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      setPage(prev => prev + 1);
+    }
+  };
+
+  // Function to filter clients based on search and filters
   const filteredClients = React.useMemo(() => {
     if (!searchText) return clients;
 
     return clients.filter(client => {
       const searchLower = searchText.toLowerCase();
-      const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
+      
+      // Map filter keys to client properties
+      const fieldMap: Record<keyof Filters, keyof ClientesApp> = {
+        codigo: 'codcli',
+        razaoSocial: 'razao',
+        cidade: 'cidade',
+        uf: 'estado',
+        telefone: 'fone',
+        email: 'email'
+      };
+      
+      const fieldsToSearch = Object.keys(filters)
+        .filter(key => filters[key as keyof Filters])
+        .map(key => fieldMap[key as keyof Filters]);
 
       return fieldsToSearch.some(field => {
-        const value = client[field as keyof typeof client];
+        const value = client[field];
         return value && value.toString().toLowerCase().includes(searchLower);
       });
     });
   }, [clients, searchText, filters]);
 
-  const handleClientPress = (client: any) => {
+  const handleClientPress = (client: ClientesApp) => {
     router.push({
       pathname: '/(tabs)/cliente-detalhes',
-      params: client
+      params: {
+        id: client.id.toString(),
+        codcli: client.codcli.toString(),
+        razao: client.razao || '',
+        fantasia: client.fantasia || '',
+        cidade: client.cidade || '',
+        estado: client.estado || '',
+        fone: client.fone || '',
+        contato: client.contato || '',
+        email: client.email || '',
+        pessoa: client.pessoa || '',
+        cnpj_cpf: client.cnpj_cpf || '',
+        ie_rg: client.ie_rg || '',
+        endereco: client.endereco || '',
+        bairro: client.bairro || '',
+        cep: client.cep || '',
+        pais: client.pais || ''
+      }
     });
   };
+
+  if (loading && clients.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+          colors={['#229dc9', '#1a7fa3']}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <MaterialCommunityIcons name="account-group" size={32} color="#fff" />
+              <ThemedText style={styles.title}>Clientes</ThemedText>
+            </View>
+            <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(tabs)/perfil')}>
+              <MaterialCommunityIcons name="account-circle" size={32} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#229dc9" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -93,132 +235,205 @@ export default function ClientesScreen() {
             <MaterialCommunityIcons name="account-group" size={32} color="#fff" />
             <ThemedText style={styles.title}>Clientes</ThemedText>
           </View>
-          <TouchableOpacity style={styles.profileButton}>
+          <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(tabs)/perfil')}>
             <MaterialCommunityIcons name="account-circle" size={32} color="#fff" />
           </TouchableOpacity>
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.scrollContainer}>
-        <ThemedView style={styles.contentContainer}>
-          {/* Barra de busca */}
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar clientes..."
-              value={searchText}
-              onChangeText={setSearchText}
-            />
-            <TouchableOpacity 
-              style={styles.filterButton}
-              onPress={() => setShowFilters(!showFilters)}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <MaterialCommunityIcons name="magnify" size={24} color="#666" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar clientes..."
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+          {searchText ? (
+            <TouchableOpacity onPress={() => setSearchText('')}>
+              <MaterialCommunityIcons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilters(!showFilters)}
+        >
+          <MaterialCommunityIcons name="filter" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      {showFilters && (
+        <ThemedView style={styles.filtersContainer}>
+          <ThemedText style={styles.filtersTitle}>Filtrar por:</ThemedText>
+          <View style={styles.filterOptions}>
+            <TouchableOpacity
+              style={[styles.filterOption, filters.codigo && styles.filterOptionActive]}
+              onPress={() => setFilters({ ...filters, codigo: !filters.codigo })}
             >
-              <MaterialCommunityIcons 
-                name="filter-variant" 
-                size={24} 
-                color="#229dc9" 
-              />
+              <ThemedText style={[styles.filterText, filters.codigo && styles.filterTextActive]}>
+                Código
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterOption, filters.razaoSocial && styles.filterOptionActive]}
+              onPress={() => setFilters({ ...filters, razaoSocial: !filters.razaoSocial })}
+            >
+              <ThemedText style={[styles.filterText, filters.razaoSocial && styles.filterTextActive]}>
+                Razão Social
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterOption, filters.cidade && styles.filterOptionActive]}
+              onPress={() => setFilters({ ...filters, cidade: !filters.cidade })}
+            >
+              <ThemedText style={[styles.filterText, filters.cidade && styles.filterTextActive]}>
+                Cidade
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterOption, filters.uf && styles.filterOptionActive]}
+              onPress={() => setFilters({ ...filters, uf: !filters.uf })}
+            >
+              <ThemedText style={[styles.filterText, filters.uf && styles.filterTextActive]}>
+                UF
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterOption, filters.telefone && styles.filterOptionActive]}
+              onPress={() => setFilters({ ...filters, telefone: !filters.telefone })}
+            >
+              <ThemedText style={[styles.filterText, filters.telefone && styles.filterTextActive]}>
+                Telefone
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterOption, filters.email && styles.filterOptionActive]}
+              onPress={() => setFilters({ ...filters, email: !filters.email })}
+            >
+              <ThemedText style={[styles.filterText, filters.email && styles.filterTextActive]}>
+                Email
+              </ThemedText>
             </TouchableOpacity>
           </View>
+        </ThemedView>
+      )}
 
-          {/* Filtros */}
-          {showFilters && (
-            <View style={styles.filtersContainer}>
-              <ThemedText style={styles.filtersTitle}>Buscar em:</ThemedText>
-              <View style={styles.filterOptions}>
-                {Object.entries(filters).map(([key, value]) => (
+      <ScrollView 
+        style={styles.scrollContainer}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+          if (isEndReached) {
+            loadMore();
+          }
+        }}
+        scrollEventThrottle={400}
+      >
+        <ThemedView style={styles.contentContainer}>
+          {filteredClients.length > 0 ? (
+            filteredClients.map((client) => (
+              <TouchableOpacity
+                key={client.id}
+                style={styles.clientCard}
+                onPress={() => handleClientPress(client)}
+              >
+                <View style={styles.clientHeader}>
+                  <ThemedText style={styles.clientCode}>{client.codcli}</ThemedText>
+                  <ThemedText style={styles.clientName}>{client.razao || client.fantasia}</ThemedText>
+                </View>
+                <View style={styles.clientDetails}>
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailItem}>
+                      <MaterialCommunityIcons name="map-marker" size={16} color="#666" />
+                      <ThemedText style={styles.detailText}>
+                        {client.cidade}{client.estado ? `, ${client.estado}` : ''}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <MaterialCommunityIcons name="phone" size={16} color="#666" />
+                      <ThemedText style={styles.detailText}>{client.fone || '-'}</ThemedText>
+                    </View>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailItem}>
+                      <MaterialCommunityIcons name="account" size={16} color="#666" />
+                      <ThemedText style={styles.detailText}>{client.contato || '-'}</ThemedText>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <MaterialCommunityIcons name="email" size={16} color="#666" />
+                      <ThemedText style={styles.detailText}>{client.email || '-'}</ThemedText>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.clientActions}>
                   <TouchableOpacity
-                    key={key}
-                    style={[styles.filterOption, value && styles.filterOptionActive]}
-                    onPress={() => setFilters(prev => ({
-                      ...prev,
-                      [key]: !prev[key as keyof Filters]
-                    }))}
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push({
+                        pathname: '/(tabs)/cliente-vendas',
+                        params: { 
+                          codcli: client.codcli.toString(),
+                          razao: client.razao || client.fantasia || ''
+                        }
+                      });
+                    }}
                   >
-                    <ThemedText style={[
-                      styles.filterOptionText,
-                      value && styles.filterOptionTextActive
-                    ]}>
-                      {key.charAt(0).toUpperCase() + key.slice(1)}
-                    </ThemedText>
+                    <MaterialCommunityIcons name="file-document-outline" size={20} color="#229dc9" />
+                    <ThemedText style={styles.actionText}>Vendas</ThemedText>
                   </TouchableOpacity>
-                ))}
-              </View>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push({
+                        pathname: '/(tabs)/cliente-produtos',
+                        params: { 
+                          codcli: client.codcli.toString(),
+                          razao: client.razao || client.fantasia || ''
+                        }
+                      });
+                    }}
+                  >
+                    <MaterialCommunityIcons name="package-variant" size={20} color="#229dc9" />
+                    <ThemedText style={styles.actionText}>Produtos</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push({
+                        pathname: '/(tabs)/cliente-titulos',
+                        params: { 
+                          codcli: client.codcli.toString(),
+                          razao: client.razao || client.fantasia || ''
+                        }
+                      });
+                    }}
+                  >
+                    <MaterialCommunityIcons name="cash-multiple" size={20} color="#229dc9" />
+                    <ThemedText style={styles.actionText}>Títulos</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <ThemedView style={styles.emptyState}>
+              <MaterialCommunityIcons name="account-search" size={48} color="#ccc" />
+              <ThemedText style={styles.emptyStateText}>
+                Nenhum cliente encontrado
+              </ThemedText>
+            </ThemedView>
+          )}
+          
+          {loading && clients.length > 0 && (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#229dc9" />
+              <ThemedText style={styles.loadingMoreText}>Carregando mais clientes...</ThemedText>
             </View>
           )}
-
-          {/* Lista de Clientes */}
-          <ThemedView style={styles.table}>
-            {filteredClients.map((item, index) => (
-              <ThemedView key={index} style={styles.tableRow}>
-                <View style={styles.rowHeader}>
-                  <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
-                  <ThemedText style={styles.razaoSocial}>{item.razaoSocial}</ThemedText>
-                </View>
-                <View style={styles.rowContent}>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Cidade</ThemedText>
-                      <ThemedText style={styles.value}>{item.cidade}</ThemedText>
-                    </View>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>UF</ThemedText>
-                      <ThemedText style={styles.value}>{item.uf}</ThemedText>
-                    </View>
-                  </View>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Telefone</ThemedText>
-                      <ThemedText style={styles.value}>{item.telefone}</ThemedText>
-                    </View>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Contato</ThemedText>
-                      <ThemedText style={styles.value}>{item.contato}</ThemedText>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.cell}>
-                  <ThemedText style={styles.label}>Email</ThemedText>
-                  <ThemedText style={styles.value}>{item.email}</ThemedText>
-                </View>
-
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={() => router.push({
-                      pathname: '/(tabs)/cliente-titulos',
-                      params: item
-                    })}
-                  >
-                    <MaterialCommunityIcons name="file-document-outline" size={24} color="#229dc9" />
-                    <ThemedText style={styles.actionButtonText}>Títulos</ThemedText>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={() => router.push({
-                      pathname: '/(tabs)/cliente-vendas',
-                      params: item
-                    })}
-                  >
-                    <MaterialCommunityIcons name="cart-outline" size={24} color="#229dc9" />
-                    <ThemedText style={styles.actionButtonText}>Vendas</ThemedText>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={() => router.push({
-                      pathname: '/(tabs)/cliente-produtos',
-                      params: item
-                    })}
-                  >
-                    <MaterialCommunityIcons name="package-variant" size={24} color="#229dc9" />
-                    <ThemedText style={styles.actionButtonText}>Produtos</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              </ThemedView>
-            ))}
-          </ThemedView>
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
@@ -229,32 +444,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    paddingBottom: 60,
   },
   headerGradient: {
-    paddingTop: 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginLeft: 10,
   },
   profileButton: {
-    padding: 8,
+    padding: 5,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    paddingHorizontal: 10,
+  },
+  filterButton: {
+    backgroundColor: '#229dc9',
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filtersContainer: {
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  filtersTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -5,
+  },
+  filterOption: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    margin: 5,
+  },
+  filterOptionActive: {
+    backgroundColor: '#229dc9',
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  filterTextActive: {
+    color: '#fff',
   },
   scrollContainer: {
     flex: 1,
@@ -262,129 +537,88 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 20,
   },
-  table: {
-    gap: 16,
-  },
-  tableRow: {
+  clientCard: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    padding: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  rowHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+  clientHeader: {
+    marginBottom: 10,
   },
-  codigo: {
+  clientCode: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#229dc9',
+    color: '#666',
   },
-  razaoSocial: {
+  clientName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    marginLeft: 8,
   },
-  rowContent: {
+  clientDetails: {
+    marginBottom: 15,
+  },
+  detailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  column: {
-    flex: 1,
-  },
-  cell: {
     marginBottom: 8,
   },
-  label: {
-    fontSize: 12,
-    color: '#666',
+  detailItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  value: {
+  detailText: {
     fontSize: 14,
     color: '#333',
+    marginLeft: 5,
   },
-  searchContainer: {
+  clientActions: {
     flexDirection: 'row',
-    marginBottom: 16,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  filterButton: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  filtersContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  filtersTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  filterOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  filterOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  filterOptionActive: {
-    backgroundColor: '#229dc9',
-    borderColor: '#229dc9',
-  },
-  filterOptionText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  filterOptionTextActive: {
-    color: '#fff',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 16,
-    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+    paddingTop: 10,
   },
   actionButton: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    justifyContent: 'center',
+    paddingVertical: 5,
   },
-  actionButtonText: {
-    fontSize: 12,
+  actionText: {
+    fontSize: 14,
     color: '#229dc9',
-    marginTop: 4,
+    marginLeft: 5,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  emptyStateText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 15,
+  },
+  loadingMoreText: {
+    marginLeft: 10,
+    color: '#666',
   },
 });

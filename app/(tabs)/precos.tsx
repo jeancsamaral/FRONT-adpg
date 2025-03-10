@@ -165,7 +165,7 @@ export default function PrecosScreen() {
 
                     <ThemedView style={styles.filterContainer}>
                         <ThemedText style={styles.filterText}>
-                            <Image source={filterIcon} style={styles.iconSmall} /> Filtro
+                            <MaterialCommunityIcons name="filter" size={20} color="#000" /> Filtro
                         </ThemedText>
                         <ThemedText style={styles.filterSubtext}>
                             (Clique aqui para expandir/esconder os campos de filtro)

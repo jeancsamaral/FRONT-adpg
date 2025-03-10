@@ -171,4 +171,9 @@ export class NotasMethods extends GroupedMethods {
         console.log('getNotaItems method needs to be implemented for notaId:', notaId, 'with pagination. Page:', page, 'Limit:', limit, 'Token:', token);
         return Promise.resolve([]);
     }
+
+    getNotaByClientId(codcli: string, token: string): Promise<NotasApp[]> {
+        console.log('getNotaByClientId method needs to be implemented for codcli:', codcli, 'and token:', token);
+        return Promise.resolve([]);
+    }
 } 

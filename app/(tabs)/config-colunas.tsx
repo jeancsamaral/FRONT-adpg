@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,51 +6,100 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ThemedView } from '../components/ThemedView';
+import { ThemedText } from '../components/ThemedText';
+import { useAuth } from '../context/AuthContext';
+import ApiCaller from '../../backEnd/apiCaller';
 
+const apiCaller = new ApiCaller();
+
+// Define interfaces for column configuration
 interface ColumnConfig {
-  id: string;
+  id: number;
   name: string;
   visible: boolean;
+  table: string;
 }
 
 interface TableConfig {
+  id: number;
   name: string;
   columns: ColumnConfig[];
 }
 
-export default function ColumnConfigScreen() {
+export default function ConfigColumnasScreen() {
   const router = useRouter();
-  const [tables, setTables] = useState<TableConfig[]>([
-    {
-      name: 'Clientes',
-      columns: [
-        { id: 'codigo', name: 'Código', visible: true },
-        { id: 'razaoSocial', name: 'Razão Social', visible: true },
-        { id: 'cnpj', name: 'CNPJ', visible: true },
-        { id: 'telefone', name: 'Telefone', visible: true },
-        { id: 'email', name: 'E-mail', visible: false },
-        { id: 'endereco', name: 'Endereço', visible: false },
-      ],
-    },
-    {
-      name: 'Produtos',
-      columns: [
-        { id: 'codigo', name: 'Código', visible: true },
-        { id: 'descricao', name: 'Descrição', visible: true },
-        { id: 'preco', name: 'Preço', visible: true },
-        { id: 'estoque', name: 'Estoque', visible: true },
-        { id: 'fornecedor', name: 'Fornecedor', visible: false },
-        { id: 'categoria', name: 'Categoria', visible: false },
-      ],
-    },
-  ]);
+  const { token } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [tables, setTables] = useState<TableConfig[]>([]);
+  const [selectedTable, setSelectedTable] = useState<TableConfig | null>(null);
 
-  const toggleColumn = (tableIndex: number, columnId: string) => {
+  useEffect(() => {
+    if (token) {
+      fetchTableConfigurations();
+    } else {
+      router.replace('/login');
+    }
+  }, [token]);
+
+  const fetchTableConfigurations = async () => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // In a real app, you would fetch this from an API
+      // For now, using mock data
+      setTimeout(() => {
+        const mockTables: TableConfig[] = [
+          {
+            id: 1,
+            name: 'Clientes',
+            columns: [
+              { id: 1, name: 'Código', visible: true, table: 'clientes' },
+              { id: 2, name: 'Razão Social', visible: true, table: 'clientes' },
+              { id: 3, name: 'Nome Fantasia', visible: true, table: 'clientes' },
+              { id: 4, name: 'CNPJ/CPF', visible: true, table: 'clientes' },
+              { id: 5, name: 'Cidade', visible: true, table: 'clientes' },
+              { id: 6, name: 'Estado', visible: true, table: 'clientes' },
+              { id: 7, name: 'Telefone', visible: true, table: 'clientes' },
+              { id: 8, name: 'Email', visible: true, table: 'clientes' },
+            ],
+          },
+          {
+            id: 2,
+            name: 'Produtos',
+            columns: [
+              { id: 9, name: 'Código', visible: true, table: 'produtos' },
+              { id: 10, name: 'Descrição', visible: true, table: 'produtos' },
+              { id: 11, name: 'Preço', visible: true, table: 'produtos' },
+              { id: 12, name: 'Estoque', visible: true, table: 'produtos' },
+              { id: 13, name: 'Unidade', visible: true, table: 'produtos' },
+              { id: 14, name: 'Grupo', visible: true, table: 'produtos' },
+              { id: 15, name: 'Fornecedor', visible: false, table: 'produtos' },
+            ],
+          },
+        ];
+        setTables(mockTables);
+        setSelectedTable(mockTables[0]);
+        setLoading(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error fetching table configurations:', error);
+      Alert.alert('Erro', 'Não foi possível carregar as configurações de colunas.');
+      setLoading(false);
+    }
+  };
+
+  const toggleColumn = (tableIndex: number, columnId: number) => {
     const newTables = [...tables];
     const table = newTables[tableIndex];
     const column = table.columns.find(c => c.id === columnId);
@@ -75,22 +124,26 @@ export default function ColumnConfigScreen() {
       </LinearGradient>
 
       <ScrollView style={styles.content}>
-        {tables.map((table, tableIndex) => (
-          <View key={table.name} style={styles.tableSection}>
-            <Text style={styles.tableTitle}>{table.name}</Text>
-            {table.columns.map((column) => (
-              <View key={column.id} style={styles.columnItem}>
-                <Text style={styles.columnName}>{column.name}</Text>
-                <Switch
-                  value={column.visible}
-                  onValueChange={() => toggleColumn(tableIndex, column.id)}
-                  trackColor={{ false: '#ddd', true: '#229dc9' }}
-                  thumbColor={column.visible ? '#fff' : '#f4f3f4'}
-                />
-              </View>
-            ))}
-          </View>
-        ))}
+        {loading ? (
+          <ActivityIndicator size="large" color="#fff" />
+        ) : (
+          tables.map((table, tableIndex) => (
+            <View key={table.name} style={styles.tableSection}>
+              <Text style={styles.tableTitle}>{table.name}</Text>
+              {table.columns.map((column) => (
+                <View key={column.id} style={styles.columnItem}>
+                  <Text style={styles.columnName}>{column.name}</Text>
+                  <Switch
+                    value={column.visible}
+                    onValueChange={() => toggleColumn(tableIndex, column.id)}
+                    trackColor={{ false: '#ddd', true: '#229dc9' }}
+                    thumbColor={column.visible ? '#fff' : '#f4f3f4'}
+                  />
+                </View>
+              ))}
+            </View>
+          ))
+        )}
       </ScrollView>
 
       <View style={styles.footer}>

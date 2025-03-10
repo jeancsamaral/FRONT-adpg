@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, TextInput } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { UserForm } from '../components/UserForm';
-import { User } from '../types';
+import { UsuariosApp, UsuarioAuth } from '../../backEnd/interfaces';
 import { useRouter } from 'expo-router';
 
 // Dados de exemplo
-const usersData = [
+const usersData: UsuariosApp[] = [
   {
     id: 1,
     codusr: 1,
@@ -38,11 +38,22 @@ interface Filters {
   inativo: boolean;
 }
 
+// Define User type to match UsuariosApp
+interface User {
+  id: number;
+  codusr: number;
+  nome: string;
+  supervisor: string;
+  inativo: string;
+  excluido: string;
+  registro: number;
+  login?: string; // Ensure login is a string
+}
+
 export default function UsuariosScreen() {
-  const router = useRouter();
-  const [users, setUsers] = useState(usersData);
+  const [users, setUsers] = useState<UsuariosApp[]>(usersData);
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -51,6 +62,8 @@ export default function UsuariosScreen() {
     supervisor: true,
     inativo: true,
   });
+
+  const router = useRouter();
 
   // Função para filtrar os usuários baseado na busca e filtros
   const filteredUsers = React.useMemo(() => {
@@ -74,14 +87,14 @@ export default function UsuariosScreen() {
   };
 
   const handleUpdateUser = async (userData: Partial<User>) => {
-    // Aqui você implementaria a lógica para atualizar um usuário
+    // Implement the logic to update a user
     console.log('Atualizar usuário:', userData);
     setIsEditing(false);
-    setSelectedUser(null);
+    setSelectedUser(undefined);
   };
 
   const handleDeleteUser = async (userId: number) => {
-    // Aqui você implementaria a lógica para deletar um usuário
+    // Implement the logic to delete a user
     console.log('Deletar usuário:', userId);
   };
 
@@ -106,6 +119,14 @@ export default function UsuariosScreen() {
       ]
     );
   };
+
+  if(!users){
+    return(
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#229dc9" />
+      </View>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -227,7 +248,7 @@ export default function UsuariosScreen() {
               onSubmit={selectedUser ? handleUpdateUser : handleCreateUser}
               onCancel={() => {
                 setIsEditing(false);
-                setSelectedUser(null);
+                setSelectedUser(undefined);
               }}
             />
           )}

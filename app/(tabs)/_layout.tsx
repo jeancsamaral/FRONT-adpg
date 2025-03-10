@@ -76,7 +76,7 @@ export default function Layout() {
             <Ionicons 
               name="settings-outline" 
               size={24} 
-              color={isActive('/(tabs)/info') ? "#007AFF" : "#000"} 
+              color={isActive('/(tabs)/perfil') ? "#007AFF" : "#000"} 
             />
           </TouchableOpacity>
         </View>
