@@ -118,11 +118,6 @@ export default function PrecosScreen() {
 
             <ScrollView style={styles.scrollContainer}>
                 <ThemedView style={styles.contentContainer}>
-                    <TouchableOpacity style={styles.createButton}>
-                        <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
-                        <ThemedText style={styles.buttonText}>Nova Tabela de Preço</ThemedText>
-                    </TouchableOpacity>
-
                     <ThemedView style={styles.icmsContainer}>
                         <ThemedText style={styles.sectionTitle}>Regiões ICMS</ThemedText>
                         {regioesICMS.map((regiao, index) => (
@@ -222,21 +217,6 @@ export default function PrecosScreen() {
                                         </View>
                                     </View>
                                 </View>
-
-                                <View style={styles.actionIcons}>
-                                    <TouchableOpacity>
-                                        <MaterialCommunityIcons name="pencil" size={20} color="#229dc9" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity>
-                                        <MaterialCommunityIcons name="delete" size={20} color="#229dc9" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity>
-                                        <MaterialCommunityIcons name="content-copy" size={20} color="#229dc9" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity>
-                                        <MaterialCommunityIcons name="file-document" size={20} color="#229dc9" />
-                                    </TouchableOpacity>
-                                </View>
                             </ThemedView>
                         ))}
                     </ThemedView>
@@ -282,20 +262,6 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         padding: 20,
-    },
-    createButton: {
-        backgroundColor: '#229dc9',
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 20,
-        alignSelf: 'flex-start',
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 16,
-        marginLeft: 8,
     },
     sectionTitle: {
         fontSize: 18,
@@ -404,14 +370,6 @@ const styles = StyleSheet.create({
     value: {
         fontSize: 14,
         color: '#333',
-    },
-    actionIcons: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 12,
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
     },
     mcContainer: {
         marginTop: 16,

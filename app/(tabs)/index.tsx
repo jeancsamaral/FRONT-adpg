@@ -19,9 +19,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const quickActions = [
     { icon: 'account-group', title: 'Clientes', count: '143', route: '/(tabs)/clientes' },
-    { icon: 'package-variant', title: 'Produtos', count: '567', route: '/(tabs)/estoque' },
     { icon: 'chart-line', title: 'Estoque', count: '32', route: '/(tabs)/estoque' },
     { icon: 'cash-multiple', title: 'Preços', route: '/(tabs)/precos', count: '10' },
+    { icon: 'file-document', title: 'Documentos', route: '/(tabs)/arquivos', count: '25' },
+    { icon: 'cog', title: 'Configurações', route: '/(tabs)/perfil' },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
@@ -32,44 +32,58 @@ const productData = [
   },
 ];
 
-// Adicione essa interface para tipar os filtros
+// Adicione os dados de exemplo para grupos
+const gruposData = [
+  { id: '1', nome: 'Aditivos' },
+  { id: '2', nome: 'Polímeros' },
+  { id: '3', nome: 'Solventes' },
+  { id: '4', nome: 'Catalisadores' },
+  { id: '5', nome: 'Resinas' }
+];
+
+// Atualize a interface de filtros
 interface Filters {
-  codigo: boolean;
-  descricao: boolean;
-  un: boolean;
-  moeda: boolean;
-  venda: boolean;
-  estoque: boolean;
+  grupo: string;
+  codigo: string;
+  descricao: string;
 }
 
 export default function EstoqueScreen() {
   const router = useRouter();
   const [products, setProducts] = useState(productData);
-  const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showGrupoSelect, setShowGrupoSelect] = useState(false);
   const [filters, setFilters] = useState<Filters>({
-    codigo: true,
-    descricao: true,
-    un: true,
-    moeda: true,
-    venda: true,
-    estoque: true,
+    grupo: '',
+    codigo: '',
+    descricao: ''
   });
 
-  // Função para filtrar os produtos baseado na busca e filtros
+  // Função para filtrar os produtos
   const filteredProducts = React.useMemo(() => {
-    if (!searchText) return products;
+    let filtered = products;
 
-    return products.filter(product => {
-      const searchLower = searchText.toLowerCase();
-      const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
+    if (filters.grupo) {
+      filtered = filtered.filter(product => product.grupo === filters.grupo);
+    }
+    if (filters.codigo) {
+      filtered = filtered.filter(product => 
+        product.codigo.toLowerCase().includes(filters.codigo.toLowerCase())
+      );
+    }
+    if (filters.descricao) {
+      filtered = filtered.filter(product => 
+        product.descricao.toLowerCase().includes(filters.descricao.toLowerCase())
+      );
+    }
 
-      return fieldsToSearch.some(field => {
-        const value = product[field as keyof typeof product];
-        return value && value.toString().toLowerCase().includes(searchLower);
-      });
-    });
-  }, [products, searchText, filters]);
+    return filtered;
+  }, [products, filters]);
+
+  const handleFilter = () => {
+    // Aqui você pode adicionar lógica adicional antes de aplicar os filtros
+    // Como validações ou chamadas à API
+  };
 
   const handleProductPress = (product: any) => {
     router.push({
@@ -144,59 +158,83 @@ Disponível: ${product.disponivel}
 
       <ScrollView style={styles.scrollContainer}>
         <ThemedView style={styles.contentContainer}>
-          {/* Barra de busca */}
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar produtos..."
-              value={searchText}
-              onChangeText={setSearchText}
-            />
+          {/* Container para os botões */}
+          <View style={styles.headerButtons}>
             <TouchableOpacity 
               style={styles.filterButton}
               onPress={() => setShowFilters(!showFilters)}
             >
-              <MaterialCommunityIcons 
-                name="filter-variant" 
-                size={24} 
-                color="#229dc9" 
-              />
+              <MaterialCommunityIcons name="filter-variant" size={24} color="#229dc9" />
+              <ThemedText style={styles.filterButtonText}>Filtrar</ThemedText>
             </TouchableOpacity>
           </View>
 
-          {/* Filtros */}
+          {/* Área de Filtros */}
           {showFilters && (
-            <View style={styles.filtersContainer}>
-              <ThemedText style={styles.filtersTitle}>Buscar em:</ThemedText>
-              <View style={styles.filterOptions}>
-                {Object.entries(filters).map(([key, value]) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.filterOption, value && styles.filterOptionActive]}
-                    onPress={() => setFilters(prev => ({
-                      ...prev,
-                      [key]: !prev[key as keyof Filters]
-                    }))}
-                  >
-                    <ThemedText style={[
-                      styles.filterOptionText,
-                      value && styles.filterOptionTextActive
-                    ]}>
-                      {key.charAt(0).toUpperCase() + key.slice(1)}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
+            <View style={styles.filterArea}>
+              {/* Select de Grupos */}
+              <View style={styles.filterField}>
+                <ThemedText style={styles.filterLabel}>Grupo</ThemedText>
+                <TouchableOpacity
+                  style={styles.select}
+                  onPress={() => setShowGrupoSelect(!showGrupoSelect)}
+                >
+                  <ThemedText style={styles.selectText}>
+                    {filters.grupo 
+                      ? gruposData.find(g => g.id === filters.grupo)?.nome 
+                      : 'Selecione um grupo'}
+                  </ThemedText>
+                  <MaterialCommunityIcons 
+                    name={showGrupoSelect ? "chevron-up" : "chevron-down"} 
+                    size={20} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Filtro por Código */}
+              <View style={styles.filterField}>
+                <ThemedText style={styles.filterLabel}>Código</ThemedText>
+                <TextInput
+                  style={styles.input}
+                  value={filters.codigo}
+                  onChangeText={(text) => setFilters(prev => ({ ...prev, codigo: text }))}
+                  placeholder="Digite o código"
+                />
+              </View>
+
+              {/* Filtro por Descrição */}
+              <View style={styles.filterField}>
+                <ThemedText style={styles.filterLabel}>Descrição</ThemedText>
+                <TextInput
+                  style={styles.input}
+                  value={filters.descricao}
+                  onChangeText={(text) => setFilters(prev => ({ ...prev, descricao: text }))}
+                  placeholder="Digite a descrição"
+                />
+              </View>
+
+              {/* Botões de Ação */}
+              <View style={styles.filterActions}>
+                <TouchableOpacity 
+                  style={styles.clearButton}
+                  onPress={() => {
+                    setFilters({ grupo: '', codigo: '', descricao: '' });
+                    setShowGrupoSelect(false);
+                  }}
+                >
+                  <ThemedText style={styles.clearButtonText}>Limpar</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.searchButton}
+                  onPress={handleFilter}
+                >
+                  <MaterialCommunityIcons name="magnify" size={20} color="#fff" />
+                  <ThemedText style={styles.searchButtonText}>Buscar</ThemedText>
+                </TouchableOpacity>
               </View>
             </View>
           )}
-
-          <TouchableOpacity 
-            style={styles.createButton}
-            onPress={() => router.push('/produto-form')}
-          >
-            <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
-            <ThemedText style={styles.buttonText}>Novo Produto</ThemedText>
-          </TouchableOpacity>
 
           <ThemedView style={styles.table}>
             {filteredProducts.map((item) => (
@@ -247,27 +285,57 @@ Disponível: ${product.disponivel}
                       <ThemedText style={styles.blueText}>{item.disponivel}</ThemedText>
                     </View>
                   </View>
-
-                  <View style={styles.actionIcons}>
-                    <TouchableOpacity onPress={() => handleEditProduct(item)}>
-                      <MaterialCommunityIcons name="pencil" size={20} color="#229dc9" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDeleteProduct(item)}>
-                      <MaterialCommunityIcons name="delete" size={20} color="#229dc9" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleCopyProduct(item)}>
-                      <MaterialCommunityIcons name="content-copy" size={20} color="#229dc9" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleProductPress(item)}>
-                      <MaterialCommunityIcons name="file-document" size={20} color="#229dc9" />
-                    </TouchableOpacity>
-                  </View>
                 </ThemedView>
               </TouchableOpacity>
             ))}
           </ThemedView>
         </ThemedView>
       </ScrollView>
+
+      <Modal
+        visible={showGrupoSelect}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowGrupoSelect(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowGrupoSelect(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={styles.modalTitle}>Selecione um grupo</ThemedText>
+              <TouchableOpacity onPress={() => setShowGrupoSelect(false)}>
+                <MaterialCommunityIcons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll}>
+              <TouchableOpacity
+                style={styles.modalItem}
+                onPress={() => {
+                  setFilters(prev => ({ ...prev, grupo: '' }));
+                  setShowGrupoSelect(false);
+                }}
+              >
+                <ThemedText style={styles.modalItemText}>Todos os grupos</ThemedText>
+              </TouchableOpacity>
+              {gruposData.map((grupo) => (
+                <TouchableOpacity
+                  key={grupo.id}
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setFilters(prev => ({ ...prev, grupo: grupo.id }));
+                    setShowGrupoSelect(false);
+                  }}
+                >
+                  <ThemedText style={styles.modalItemText}>{grupo.nome}</ThemedText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -310,18 +378,22 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 20,
   },
-  createButton: {
-    backgroundColor: '#229dc9',
+  headerButtons: {
+    marginBottom: 16,
+  },
+  filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
-    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
-  buttonText: {
-    color: 'white',
+  filterButtonText: {
     fontSize: 16,
+    color: '#229dc9',
     marginLeft: 8,
   },
   table: {
@@ -392,72 +464,119 @@ const styles = StyleSheet.create({
   blueText: {
     color: '#007AFF',
   },
-  actionIcons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  filterButton: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  filtersContainer: {
+  filterArea: {
     backgroundColor: '#fff',
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
+    gap: 16,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  filtersTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  filterOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  filterField: {
     gap: 8,
+    position: 'relative',
   },
-  filterOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  filterOptionActive: {
-    backgroundColor: '#229dc9',
-    borderColor: '#229dc9',
-  },
-  filterOptionText: {
+  filterLabel: {
     fontSize: 14,
+    fontWeight: '500',
     color: '#666',
   },
-  filterOptionTextActive: {
+  select: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  selectText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 12,
+    fontSize: 16,
+  },
+  filterActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  clearButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    color: '#666',
+    fontSize: 16,
+  },
+  searchButton: {
+    flex: 1,
+    backgroundColor: '#229dc9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+  },
+  searchButtonText: {
     color: '#fff',
+    fontSize: 16,
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalScroll: {
+    maxHeight: 300,
+  },
+  modalItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
   },
 });
