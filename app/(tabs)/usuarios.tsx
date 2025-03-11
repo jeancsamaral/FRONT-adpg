@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,11 @@ import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { UserForm } from '../components/UserForm';
 import { UsuariosApp, UsuarioAuth } from '../../backEnd/interfaces';
-import { useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';  
+import { useAuth } from '../context/AuthContext';
+import ApiCaller from '../../backEnd/apiCaller';
+
+const apiCaller = new ApiCaller();
 
 // Dados de exemplo
 const usersData: UsuariosApp[] = [
@@ -50,10 +54,16 @@ interface User {
   login?: string; // Ensure login is a string
 }
 
+// Define a new type for display purposes
+interface DisplayUser extends Omit<UsuariosApp & UsuarioAuth, 'login'> {
+  login?: string; // login as a string for display
+}
+
 export default function UsuariosScreen() {
-  const [users, setUsers] = useState<UsuariosApp[]>(usersData);
+  const { token, user } = useAuth();
+  const [users, setUsers] = useState<DisplayUser[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
+  const [selectedUser, setSelectedUser] = useState<DisplayUser | undefined>(undefined);
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -64,6 +74,29 @@ export default function UsuariosScreen() {
   });
 
   const router = useRouter();
+
+  useEffect(() => {
+    if (token && user) {
+      if (user.isAdmin) {
+        fetchAllUsers();
+      } else {
+        Alert.alert('Acesso Negado', 'Você não tem permissão para visualizar todos os usuários.');
+      }
+    }
+  }, [token, user]);
+
+  const fetchAllUsers = async () => {
+    try {
+      const allUsers = (await apiCaller.userMethods.getAllUsers(1, 100, token ?? '')).users;
+      setUsers(allUsers.map((u: UsuariosApp) => ({
+        ...u,
+        login: u.login?.login || '', // Map login to string, default to empty string if undefined
+      })));
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os usuários.');
+    }
+  };
 
   // Função para filtrar os usuários baseado na busca e filtros
   const filteredUsers = React.useMemo(() => {
@@ -80,17 +113,36 @@ export default function UsuariosScreen() {
     });
   }, [users, searchText, filters]);
 
-  const handleCreateUser = async (userData: Partial<User>) => {
+  const handleCreateUser = async (userData: Partial<UsuarioAuth>) => {
     // Aqui você implementaria a lógica para criar um usuário
     console.log('Criar usuário:', userData);
     setIsEditing(false);
   };
 
-  const handleUpdateUser = async (userData: Partial<User>) => {
-    // Implement the logic to update a user
-    console.log('Atualizar usuário:', userData);
-    setIsEditing(false);
-    setSelectedUser(undefined);
+  const handleUpdateUser = async (formData:{nome:string,senha:string,login:string}) => {
+    const userData = selectedUser;
+    if (!token || !selectedUser || !userData) return;
+    console.log("selectedUser",userData);
+    try {
+      console.log("SFI",formData)
+        // Use the updateUserAuth method to update the user
+        await apiCaller.userMethods.updateUserAuth(selectedUser.codusr.toString(), {
+          codusr: userData.codusr,
+          isAdmin: userData.isAdmin,
+          login: formData.login,
+          nome: formData.nome,
+          password: formData.senha,
+          profileAccess: [],
+        }, token);
+        Alert.alert('Sucesso', 'Usuário atualizado com sucesso!');
+        fetchAllUsers(); // Refresh the user list
+    } catch (error) {
+        console.error('Error updating user:', error);
+        Alert.alert('Erro', 'Não foi possível atualizar o usuário.');
+    } finally {
+        setIsEditing(false);
+        setSelectedUser(undefined);
+    }
   };
 
   const handleDeleteUser = async (userId: number) => {
@@ -229,7 +281,7 @@ export default function UsuariosScreen() {
 
                     <ThemedView style={styles.actionIcons}>
                       <TouchableOpacity onPress={() => {
-                        setSelectedUser(item);
+                        setSelectedUser(users.find(u => u.codusr === item.codusr));
                         setIsEditing(true);
                       }}>
                         <Ionicons name="create-outline" size={20} color="#075eec" />
@@ -244,7 +296,7 @@ export default function UsuariosScreen() {
             </>
           ) : (
             <UserForm
-              user={selectedUser}
+              user={selectedUser as User}
               onSubmit={selectedUser ? handleUpdateUser : handleCreateUser}
               onCancel={() => {
                 setIsEditing(false);

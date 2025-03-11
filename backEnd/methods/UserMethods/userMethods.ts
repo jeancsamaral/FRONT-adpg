@@ -1,4 +1,4 @@
-import { UsuariosApp } from "../../interfaces";
+import { UsuarioAuth, UsuariosApp } from "../../interfaces";
 import { useAxios } from "../../utils/useAxios";
 import { mockedUsers } from "../../mocks/";
 import { environment } from "../../config";
@@ -18,8 +18,22 @@ export async function updateUser(
   if (environment.appState === "OFFLINE") {
     return { data: { ...mockedUsers[0], ...user } };
   }
-  return useAxios(`/user/${id}`, token, user, "put");
+  return useAxios(`/user/user/base/${id}`, token, user, "patch");
 }
+
+export async function updateUserAuth(
+  id: string,
+  user: Partial<UsuarioAuth>,
+  token: string
+) {
+  if (environment.appState === "OFFLINE") {
+    return { data: { ...mockedUsers[0], ...user } };
+  }
+  console.log("fooooo",user)
+  return useAxios(`/user/user/auth/${id}`, token, user, "patch");
+}
+
+
 
 export async function getAllUsers(page: number, limit: number, token: string) {
   if (environment.appState === "OFFLINE") {
@@ -30,3 +44,12 @@ export async function getAllUsers(page: number, limit: number, token: string) {
   }
   return useAxios(`/user/all?page=${page}&limit=${limit}`, token, null, "get");
 }
+
+export async function getUser(id: string, token: string) {
+  if (environment.appState === "OFFLINE") {
+    return mockedUsers.find((user) => user.id.toString() === id);
+  }
+  console.log("FOO!@#",id);
+  return useAxios(`/user/user/${id}`, token, null, "get");
+}
+

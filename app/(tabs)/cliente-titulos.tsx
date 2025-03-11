@@ -71,6 +71,8 @@ export default function ClienteTitulosScreen() {
         100, // limit
         token
       );
+
+      console.log("recebidos", recebidos);
       
       // Get pending payments
       const aReceber = await apiCaller.receberAppMethods.getReceberAppByCodcli(
@@ -79,6 +81,8 @@ export default function ClienteTitulosScreen() {
         100, // limit
         token
       );
+
+      console.log("aReceber", aReceber);
       
       // Get latest purchase (note)
       const allNotas = await apiCaller.notasMethods.getAllNotas(
@@ -86,16 +90,27 @@ export default function ClienteTitulosScreen() {
         100, // limit
         token
       );
+
+      console.log("allNotas", allNotas);
       
       // Filter notes for the current client and sort by emission date (descending)
       const clienteNotas = allNotas
         .filter((nota: NotasApp) => nota.cliente && nota.codcli === parseInt(params.codcli as string))
         .sort((a: NotasApp, b: NotasApp) => new Date(b.emissao).getTime() - new Date(a.emissao).getTime());
+
+      console.log("clienteNotas", clienteNotas);
       
       // Calculate summary
-      const recebidosTotal = recebidos.reduce((sum: number, item: RecebidosApp) => sum + item.valor, 0);
-      const aReceberTotal = aReceber.reduce((sum: number, item: ReceberApp) => sum + item.valor, 0);
-      
+      const recebidosTotal = recebidos.reduce((sum: number, item: RecebidosApp) => {
+        const valor = parseFloat(item.valor);
+        return sum + (isNaN(valor) ? 0 : valor);
+      }, 0);
+      console.log("recebidosTotal", recebidosTotal);
+      const aReceberTotal = aReceber.reduce((sum: number, item: ReceberApp) => {
+        const valor = parseFloat(item.valor);
+        return sum + (isNaN(valor) ? 0 : valor);
+      }, 0);
+      console.log("aReceberTotal", aReceberTotal);
       // Update state
       setTitulosRecebidos(recebidos);
       setTitulosAReceber(aReceber);

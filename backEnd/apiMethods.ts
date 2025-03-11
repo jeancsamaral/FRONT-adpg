@@ -65,6 +65,11 @@ export class ProductMethods extends GroupedMethods {
         return Promise.resolve([]);
     }
 
+    getProductById(id: string, token: string): Promise<ProdutosApp> {
+        console.log('getProductById method needs to be implemented for id:', id, 'and token:', token);
+        return Promise.resolve({} as ProdutosApp);
+    }
+
     createProducts(product: ProdutosApp, token: string): Promise<void> {
         console.log('createProducts method needs to be implemented.', product, token);
         return Promise.resolve();
@@ -126,6 +131,11 @@ export class UserMethods extends GroupedMethods {
     getAllUsers(page: number, limit: number, token: string): Promise<UsuariosApp[]> {
         console.log('getAllUsers method needs to be implemented with pagination. Page:', page, 'Limit:', limit, 'Token:', token);
         return Promise.resolve([]);
+    }
+
+    getUser(id: string, token: string): Promise<UsuariosApp> {
+        console.log('getUser method needs to be implemented for id:', id, 'and token:', token);
+        return Promise.resolve({} as UsuariosApp);
     }
 }
 

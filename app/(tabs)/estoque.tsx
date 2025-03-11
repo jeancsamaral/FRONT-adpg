@@ -1,38 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useRouter } from 'expo-router';
+import ApiCaller from '../../backEnd/apiCaller';
+import { useAuth } from '../context/AuthContext';
 
-// Dados de exemplo
-const productData = [
-  {
-    codigo: "PA00001",
-    descricao: "IRGASURF SR 100",
-    un: "KG",
-    moeda: "US$",
-    venda: "0.00",
-    estoque: "0.00",
-    reservado: "0.00",
-    comprado: "0.00",
-    disponivel: "0.00",
-    grupo: "1",
-  },
-  {
-    codigo: "PA00002",
-    descricao: "IRGASURF HL 560",
-    un: "KG",
-    moeda: "US$",
-    venda: "0.00",
-    estoque: "0.00",
-    reservado: "0.00",
-    comprado: "0.00",
-    disponivel: "0.00",
-    grupo: "2",
-  },
-];
+// Initialize ApiCaller
+const apiCaller = new ApiCaller();
 
 // Adicione os dados de exemplo para grupos
 const gruposData = [
@@ -52,7 +29,8 @@ interface Filters {
 
 export default function EstoqueScreen() {
   const router = useRouter();
-  const [products, setProducts] = useState(productData);
+  const { token } = useAuth();
+  const [products, setProducts] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showGrupoSelect, setShowGrupoSelect] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -60,22 +38,44 @@ export default function EstoqueScreen() {
     codigo: '',
     descricao: ''
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    if (!token) {
+      Alert.alert('Erro', 'Token de autenticação não encontrado.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await apiCaller.productMethods.getProducts({}, 1, 100, token);
+      setProducts(response);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os produtos.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Função para filtrar os produtos
   const filteredProducts = React.useMemo(() => {
     let filtered = products;
 
     if (filters.grupo) {
-      filtered = filtered.filter(product => product.grupo === filters.grupo);
+      filtered = filtered.filter((product: any) => product.grupo === filters.grupo);
     }
     if (filters.codigo) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter((product: any) => 
         product.codigo.toLowerCase().includes(filters.codigo.toLowerCase())
       );
     }
     if (filters.descricao) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter((product: any) => 
         product.descricao.toLowerCase().includes(filters.descricao.toLowerCase())
       );
     }
@@ -206,7 +206,7 @@ export default function EstoqueScreen() {
             <ActivityIndicator size="large" color="#229dc9" />
           ) : (
             <ThemedView style={styles.table}>
-              {filteredProducts.map((item) => (
+              {filteredProducts.map((item: any) => (
                 <TouchableOpacity
                   key={item.codigo}
                   onPress={() => handleProductPress(item)}

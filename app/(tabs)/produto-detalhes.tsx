@@ -55,6 +55,7 @@ export default function ProdutoDetalhesScreen() {
     try {
       // Fix the order of parameters to match the API method signature
       const productId = parseInt(params.id as string);
+      const codprod = parseInt(params.codprod as string);
       if (isNaN(productId)) {
         Alert.alert('Erro', 'ID do produto inválido.');
         router.back();
@@ -63,12 +64,15 @@ export default function ProdutoDetalhesScreen() {
       
       // Use the actual API call
       const response = await apiCaller.productMethods.getProducts(
-        productId,
+        {
+          codprod: codprod.toString(),
+        },
         1,
         10,
         token
       );
-      setProduct(response);
+      console.log("response", response);
+      setProduct(response[0]);
     } catch (error) {
       console.error('Error fetching product details:', error);
       Alert.alert('Erro', 'Não foi possível carregar os detalhes do produto.');

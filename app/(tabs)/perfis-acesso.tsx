@@ -35,7 +35,7 @@ interface PermissionGroup {
 
 export default function AccessProfilesScreen() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UsuariosApp | null>(null);
   const [permissionGroups, setPermissionGroups] = useState<PermissionGroup[]>([
@@ -85,15 +85,17 @@ export default function AccessProfilesScreen() {
       setLoading(true);
       // Assuming we're getting the current user's data
       // In a real app, you might get the user ID from params or context
-      const users = await apiCaller.userMethods.getAllUsers(1, 10, token);
-      if (users && users.length > 0) {
-        setUserData(users[0]); // For demo, just using the first user
+      const {userAuth:userAuthData} = await apiCaller.userMethods.getUser(user?.id.toString() ?? '', token);
+      console.log("Fetched userAuth:", userAuthData);
+      if (userAuthData) {
+        setUserData(userAuthData); // For demo, just using the first user
         
         // If the user has profileAccess data, update the permission groups
-        if (users[0].login && users[0].login.profileAccess) {
-          updatePermissionsFromProfile(users[0].login.profileAccess);
+        if (userAuthData && userAuthData.profileAccess) {
+          updatePermissionsFromProfile(userAuthData.profileAccess);
         }
       }
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching user data:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados do usuário.');

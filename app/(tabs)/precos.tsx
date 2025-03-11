@@ -25,6 +25,8 @@ import { Image } from "react-native";
 // Initialize ApiCaller
 const apiCaller = new ApiCaller();
 
+// apiCaller.regionalPricesMethods.getAllRegionalPrices(1, 10, token)
+
 const regioesICMS = [
   { uf: "SP", aliquota: "18%" },
   { uf: "MG, PR, RS, RJ, SC", aliquota: "12%" },
@@ -33,89 +35,6 @@ const regioesICMS = [
     aliquota: "7%",
   },
   { uf: "Importados", aliquota: "4%" },
-];
-
-const precosData = [
-  {
-    codigo: "PA00001",
-    descricao: "IRGASURF SR 100",
-    st: "300,00",
-    ipi: "3,25",
-    moeda: "US$",
-    precoCompra: "0,00",
-    mc1_18: "0,00",
-    mc2_18: "0,00",
-    mc3_18: "0,00",
-    mc1_12: "-",
-    mc2_12: "-",
-    mc3_12: "-",
-    mc1_7: "-",
-    mc2_7: "-",
-    mc3_7: "-",
-    mc1_4: "-",
-    mc2_4: "-",
-    mc3_4: "-",
-  },
-  {
-    codigo: "PA00002",
-    descricao: "IRGASURF HL 560",
-    st: "450,00",
-    ipi: "4,50",
-    moeda: "US$",
-    precoCompra: "2,50",
-    mc1_18: "3,00",
-    mc2_18: "3,50",
-    mc3_18: "4,00",
-    mc1_12: "2,80",
-    mc2_12: "3,30",
-    mc3_12: "3,80",
-    mc1_7: "2,60",
-    mc2_7: "3,10",
-    mc3_7: "3,60",
-    mc1_4: "2,40",
-    mc2_4: "2,90",
-    mc3_4: "3,40",
-  },
-  {
-    codigo: "PA00003",
-    descricao: "POLÍMERO XR-750",
-    st: "275,50",
-    ipi: "2,75",
-    moeda: "R$",
-    precoCompra: "1,80",
-    mc1_18: "2,20",
-    mc2_18: "2,70",
-    mc3_18: "3,20",
-    mc1_12: "2,00",
-    mc2_12: "2,50",
-    mc3_12: "3,00",
-    mc1_7: "-",
-    mc2_7: "-",
-    mc3_7: "-",
-    mc1_4: "-",
-    mc2_4: "-",
-    mc3_4: "-",
-  },
-  {
-    codigo: "PA00004",
-    descricao: "ADITIVO KP-200",
-    st: "180,00",
-    ipi: "3,00",
-    moeda: "US$",
-    precoCompra: "1,20",
-    mc1_18: "1,50",
-    mc2_18: "2,00",
-    mc3_18: "2,50",
-    mc1_12: "1,30",
-    mc2_12: "1,80",
-    mc3_12: "2,30",
-    mc1_7: "1,10",
-    mc2_7: "1,60",
-    mc3_7: "2,10",
-    mc1_4: "1,00",
-    mc2_4: "1,50",
-    mc3_4: "2,00",
-  },
 ];
 
 // Define the Filters interface
@@ -134,6 +53,41 @@ const handlePricePress = (item: ProdutosApp_PrecosRegiao) => {
 };
 
 export default function PrecosScreen() {
+    const [precosData, setPrecosData] = useState<ProdutosApp_PrecosRegiao[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    useEffect(() => { 
+        const fetchPrecosData = async () => {
+            try {
+                const token = "your-auth-token"; // Replace with actual token retrieval logic
+                let response = await apiCaller.regionalPricesMethods.getAllRegionalPrices(1, 10, token);
+                console.log("FOO!",response);
+                response = response.regionalPrices;
+                console.log("FOO@",response);
+                
+                // Check if the response is an array
+                if (Array.isArray(response)) {
+                    console.log("isArr",response);
+                    setPrecosData(response);
+                } else {
+                    console.error("Expected an array but got:", response);
+                    setPrecosData([]); // Set to an empty array if the response is not an array
+                }
+            } catch (error) {
+                console.error("Error fetching prices data:", error);
+                setPrecosData([]); // Set to an empty array in case of error
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPrecosData();
+    }, []);
+
+    if (loading) {
+        return <ActivityIndicator size="large" color="#0000ff" />;
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <LinearGradient
@@ -176,7 +130,7 @@ export default function PrecosScreen() {
                         {precosData.map((item, index) => (
                             <ThemedView key={index} style={styles.tableRow}>
                                 <View style={styles.rowHeader}>
-                                    <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
+                                    <ThemedText style={styles.codigo}>{item.codproduto}</ThemedText>
                                     <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
                                 </View>
 
@@ -184,7 +138,7 @@ export default function PrecosScreen() {
                                     <View style={styles.column}>
                                         <View style={styles.cell}>
                                             <ThemedText style={styles.label}>ST</ThemedText>
-                                            <ThemedText style={styles.value}>{item.st}</ThemedText>
+                                            <ThemedText style={styles.value}>{item.cod_st}</ThemedText>
                                         </View>
                                         <View style={styles.cell}>
                                             <ThemedText style={styles.label}>IPI %</ThemedText>
@@ -198,7 +152,7 @@ export default function PrecosScreen() {
                                         </View>
                                         <View style={styles.cell}>
                                             <ThemedText style={styles.label}>Preço Compra</ThemedText>
-                                            <ThemedText style={styles.value}>{item.precoCompra}</ThemedText>
+                                            <ThemedText style={styles.value}>{item.precompra}</ThemedText>
                                         </View>
                                     </View>
                                 </View>

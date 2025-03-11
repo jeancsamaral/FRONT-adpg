@@ -42,22 +42,16 @@ export default function UserDataScreen() {
 
     try {
       setLoading(true);
-      // If we have a user ID from the auth context, use it to fetch specific user data
-      if (user && user.id) {
-        const users = await apiCaller.userMethods.getAllUsers(1, 100, token);
-        const currentUser = users.find(u => u.id === user.id);
-        if (currentUser) {
-          setUserData(currentUser);
-        } else {
-          // If user not found in the list, use the first one as fallback
-          setUserData(users[0]);
-        }
+      const {user:userData,userAuth:userAuthData} = await apiCaller.userMethods.getUser(user?.id.toString() ?? '', token);
+      console.log("Fetched users:", userData);
+
+      // Find the current user by ID
+      const currentUser = userAuthData;
+      if (currentUser) {
+        setUserData(currentUser);
       } else {
-        // Fallback to getting the first user
-        const users = await apiCaller.userMethods.getAllUsers(1, 10, token);
-        if (users && users.length > 0) {
-          setUserData(users[0]);
-        }
+        console.warn("User not found, using fallback.");
+        setUserData(userData); // Fallback to the first user
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -134,7 +128,6 @@ export default function UserDataScreen() {
               <TouchableOpacity 
                 style={styles.editButton}
                 onPress={() => {
-                  // Navigate to edit profile screen or show edit form
                   Alert.alert('Editar', 'Funcionalidade de edição será implementada em breve.');
                 }}
               >
