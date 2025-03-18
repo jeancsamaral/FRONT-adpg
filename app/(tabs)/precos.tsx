@@ -25,7 +25,17 @@ import { Image } from "react-native";
 // Initialize ApiCaller
 const apiCaller = new ApiCaller();
 
-// apiCaller.regionalPricesMethods.getAllRegionalPrices(1, 10, token)
+// Format number with comma as decimal separator
+const formatNumber = (value: number | string | undefined) => {
+  if (!value) return '0,00';
+  if (typeof value === 'string') {
+    value = parseFloat(value);
+  }
+  return value.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
 
 const regioesICMS = [
   { uf: "SP", aliquota: "18%" },
@@ -260,7 +270,7 @@ export default function PrecosScreen() {
                                         </View>
                                         <View style={styles.cell}>
                                             <ThemedText style={styles.label}>IPI %</ThemedText>
-                                            <ThemedText style={styles.value}>{item.ipi}</ThemedText>
+                                            <ThemedText style={styles.value}>{formatNumber(item.ipi)}</ThemedText>
                                         </View>
                                     </View>
                                     <View style={styles.column}>
@@ -270,7 +280,7 @@ export default function PrecosScreen() {
                                         </View>
                                         <View style={styles.cell}>
                                             <ThemedText style={styles.label}>Preço Compra</ThemedText>
-                                            <ThemedText style={styles.value}>{item.precompra}</ThemedText>
+                                            <ThemedText style={styles.value}>{formatNumber(item.precompra)}</ThemedText>
                                         </View>
                                     </View>
                                 </View>
@@ -280,11 +290,11 @@ export default function PrecosScreen() {
                                         <ThemedText style={styles.mcTitle}>ICMS 18%</ThemedText>
                                         <View style={styles.mcRow}>
                                             <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc1_18}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc1_18)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc2_18}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc2_18)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc3_18}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc3_18)}</ThemedText>
                                         </View>
                                     </View>
 
@@ -292,11 +302,11 @@ export default function PrecosScreen() {
                                         <ThemedText style={styles.mcTitle}>ICMS 12%</ThemedText>
                                         <View style={styles.mcRow}>
                                             <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc1_12}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc1_12)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc2_12}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc2_12)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc3_12}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc3_12)}</ThemedText>
                                         </View>
                                     </View>
 
@@ -304,11 +314,11 @@ export default function PrecosScreen() {
                                         <ThemedText style={styles.mcTitle}>ICMS 7%</ThemedText>
                                         <View style={styles.mcRow}>
                                             <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc1_7}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc1_7)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc2_7}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc2_7)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc3_7}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc3_7)}</ThemedText>
                                         </View>
                                     </View>
 
@@ -316,11 +326,11 @@ export default function PrecosScreen() {
                                         <ThemedText style={styles.mcTitle}>ICMS 4%</ThemedText>
                                         <View style={styles.mcRow}>
                                             <ThemedText style={styles.mcLabel}>MC1:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc1_4}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc1_4)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC2:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc2_4}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc2_4)}</ThemedText>
                                             <ThemedText style={styles.mcLabel}>MC3:</ThemedText>
-                                            <ThemedText style={styles.mcValue}>{item.mc3_4}</ThemedText>
+                                            <ThemedText style={styles.mcValue}>{formatNumber(item.mc3_4)}</ThemedText>
                                         </View>
                                     </View>
                                 </View>

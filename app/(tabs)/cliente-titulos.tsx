@@ -102,12 +102,12 @@ export default function ClienteTitulosScreen() {
       
       // Calculate summary
       const recebidosTotal = recebidos.reduce((sum: number, item: RecebidosApp) => {
-        const valor = parseFloat(item.valor);
+        const valor = item.valor;
         return sum + (isNaN(valor) ? 0 : valor);
       }, 0);
       console.log("recebidosTotal", recebidosTotal);
       const aReceberTotal = aReceber.reduce((sum: number, item: ReceberApp) => {
-        const valor = parseFloat(item.valor);
+        const valor = item.valor;
         return sum + (isNaN(valor) ? 0 : valor);
       }, 0);
       console.log("aReceberTotal", aReceberTotal);
@@ -197,21 +197,36 @@ export default function ClienteTitulosScreen() {
           
           <ThemedView style={styles.summaryContainer}>
             <ThemedView style={styles.summaryCard}>
-              <ThemedText style={styles.summaryTitle}>Última Compra</ThemedText>
-              <ThemedText style={styles.summaryValue}>{formatCurrency(summary.ultimaCompra.valor)}</ThemedText>
-              <ThemedText style={styles.summarySubtitle}>{formatDate(summary.ultimaCompra.data)}</ThemedText>
+              <View style={styles.summaryContent}>
+                <MaterialCommunityIcons name="calendar-clock" size={24} color="#229dc9" />
+                <View style={styles.summaryTextContainer}>
+                  <ThemedText style={styles.summaryTitle}>Última Compra</ThemedText>
+                  <ThemedText style={styles.summaryValue}>{formatCurrency(summary.ultimaCompra.valor)}</ThemedText>
+                  <ThemedText style={styles.summarySubtitle}>{formatDate(summary.ultimaCompra.data)}</ThemedText>
+                </View>
+              </View>
             </ThemedView>
             
             <ThemedView style={styles.summaryCard}>
-              <ThemedText style={styles.summaryTitle}>Recebidos</ThemedText>
-              <ThemedText style={styles.summaryValue}>{formatCurrency(summary.recebidos.total)}</ThemedText>
-              <ThemedText style={styles.summarySubtitle}>{summary.recebidos.quantidade} título(s)</ThemedText>
+              <View style={styles.summaryContent}>
+                <MaterialCommunityIcons name="check-circle" size={24} color="#229dc9" />
+                <View style={styles.summaryTextContainer}>
+                  <ThemedText style={styles.summaryTitle}>Recebidos</ThemedText>
+                  <ThemedText style={styles.summaryValue}>{formatCurrency(summary.recebidos.total)}</ThemedText>
+                  <ThemedText style={styles.summarySubtitle}>{summary.recebidos.quantidade} título(s)</ThemedText>
+                </View>
+              </View>
             </ThemedView>
             
             <ThemedView style={styles.summaryCard}>
-              <ThemedText style={styles.summaryTitle}>A Receber</ThemedText>
-              <ThemedText style={styles.summaryValue}>{formatCurrency(summary.aReceber.total)}</ThemedText>
-              <ThemedText style={styles.summarySubtitle}>{summary.aReceber.quantidade} título(s)</ThemedText>
+              <View style={styles.summaryContent}>
+                <MaterialCommunityIcons name="clock" size={24} color="#229dc9" />
+                <View style={styles.summaryTextContainer}>
+                  <ThemedText style={styles.summaryTitle}>A Receber</ThemedText>
+                  <ThemedText style={styles.summaryValue}>{formatCurrency(summary.aReceber.total)}</ThemedText>
+                  <ThemedText style={styles.summarySubtitle}>{summary.aReceber.quantidade} título(s)</ThemedText>
+                </View>
+              </View>
             </ThemedView>
           </ThemedView>
           
@@ -338,25 +353,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 20,
   },
   summaryCard: {
-    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 15,
-    marginHorizontal: 5,
+    marginBottom: 10,
+  },
+  summaryContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
+  summaryTextContainer: {
+    flex: 1,
+    marginLeft: 15,
+  },
   summaryTitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     marginBottom: 5,
   },
   summaryValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#229dc9',
   },

@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput, ActivityIndicator, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ThemedText } from '../components/ThemedText';
-import { ThemedView } from '../components/ThemedView';
-import { useRouter } from 'expo-router';
-import { ClientesApp } from '../../backEnd/interfaces';
-import ApiCaller from '../../backEnd/apiCaller';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  View,
+  SafeAreaView,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  Image,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ThemedText } from "../components/ThemedText";
+import { ThemedView } from "../components/ThemedView";
+import { useRouter } from "expo-router";
+import { ClientesApp } from "../../backEnd/interfaces";
+import ApiCaller from "../../backEnd/apiCaller";
+import { useAuth } from "../context/AuthContext";
 
 const apiCaller = new ApiCaller();
 
@@ -16,91 +26,91 @@ const clientData: ClientesApp[] = [
   {
     id: 1,
     codcli: 2,
-    razao: 'MEYERMAN BRASIL IND COM LTDA',
-    fantasia: 'MEYERMAN',
-    cidade: 'SAO BERNARDO DO CAMPO',
-    estado: 'SP',
-    fone: '11 4178-7444',
-    contato: '-',
-    email: 'meyerman@meyerman.com.br',
-    pessoa: 'J',
-    cnpj_cpf: '12.345.678/0001-90',
-    ie_rg: '123.456.789.000',
-    endereco: 'Rua Example, 123',
-    bairro: 'Centro',
-    cep: '12345-678',
-    pais: 'Brasil',
-    inativo: 'N',
-    excluido: 'N',
+    razao: "MEYERMAN BRASIL IND COM LTDA",
+    fantasia: "MEYERMAN",
+    cidade: "SAO BERNARDO DO CAMPO",
+    estado: "SP",
+    fone: "11 4178-7444",
+    contato: "-",
+    email: "meyerman@meyerman.com.br",
+    pessoa: "J",
+    cnpj_cpf: "12.345.678/0001-90",
+    ie_rg: "123.456.789.000",
+    endereco: "Rua Example, 123",
+    bairro: "Centro",
+    cep: "12345-678",
+    pais: "Brasil",
+    inativo: "N",
+    excluido: "N",
     registro: 1,
     abertura: new Date(),
     clidesde: new Date(),
-    transporta: '',
+    transporta: "",
     icms: 0,
     itens: [],
     memo: undefined,
     notas: [],
     recebidosApp: [],
-    receberApp: []
+    receberApp: [],
   },
   {
     id: 2,
     codcli: 3,
-    razao: 'INDUSTRIA QUIMICA LTDA',
-    fantasia: 'QUIMICA',
-    cidade: 'GUARULHOS',
-    estado: 'SP',
-    fone: '11 2222-3333',
-    contato: 'João Silva',
-    email: 'contato@quimica.com.br',
-    pessoa: 'J',
-    cnpj_cpf: '23.456.789/0001-01',
-    ie_rg: '234.567.890.001',
-    endereco: 'Av Industrial, 456',
-    bairro: 'Distrito Industrial',
-    cep: '07123-456',
-    pais: 'Brasil',
-    inativo: 'N',
-    excluido: 'N',
+    razao: "INDUSTRIA QUIMICA LTDA",
+    fantasia: "QUIMICA",
+    cidade: "GUARULHOS",
+    estado: "SP",
+    fone: "11 2222-3333",
+    contato: "João Silva",
+    email: "contato@quimica.com.br",
+    pessoa: "J",
+    cnpj_cpf: "23.456.789/0001-01",
+    ie_rg: "234.567.890.001",
+    endereco: "Av Industrial, 456",
+    bairro: "Distrito Industrial",
+    cep: "07123-456",
+    pais: "Brasil",
+    inativo: "N",
+    excluido: "N",
     registro: 2,
     abertura: new Date(),
     clidesde: new Date(),
-    transporta: '',
+    transporta: "",
     icms: 0,
     itens: [],
     memo: undefined,
     notas: [],
     recebidosApp: [],
-    receberApp: []
-  }
+    receberApp: [],
+  },
 ];
 
 // Interface for filters
-interface Filters {
-  codigo: boolean;
-  razaoSocial: boolean;
-  cidade: boolean;
-  uf: boolean;
-  telefone: boolean;
-  email: boolean;
-}
+// interface Filters {
+//   codigo: boolean;
+//   razaoSocial: boolean;
+//   cidade: boolean;
+//   uf: boolean;
+//   telefone: boolean;
+//   email: boolean;
+// }
 
 export default function ClientesScreen() {
   const router = useRouter();
   const { token } = useAuth();
   const [clients, setClients] = useState<ClientesApp[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchText, setSearchText] = useState('');
-  const [debouncedSearchText, setDebouncedSearchText] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<Filters>({
-    codigo: true,
-    razaoSocial: true,
-    cidade: true,
-    uf: true,
-    telefone: true,
-    email: true,
-  });
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
+  // const [showFilters, setShowFilters] = useState(false);
+  // const [filters, setFilters] = useState<Filters>({
+  //   codigo: true,
+  //   razaoSocial: true,
+  //   cidade: true,
+  //   uf: true,
+  //   telefone: true,
+  //   email: true,
+  // });
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const limit = 20;
@@ -123,15 +133,19 @@ export default function ClientesScreen() {
 
   // Effect to fetch data when page changes
   useEffect(() => {
-    if (page > 1) { // Only fetch if it's not the initial page
+    if (page > 1) {
+      // Only fetch if it's not the initial page
       fetchClients();
     }
   }, [page]);
 
   const fetchClients = async () => {
     if (!token) {
-      Alert.alert('Erro', 'Você precisa estar logado para acessar esta página.');
-      router.replace('/login');
+      Alert.alert(
+        "Erro",
+        "Você precisa estar logado para acessar esta página."
+      );
+      router.replace("/login");
       return;
     }
 
@@ -143,19 +157,19 @@ export default function ClientesScreen() {
         token,
         debouncedSearchText // Add search text to filter
       );
-      
+
       if (response.length === 0) {
         setHasMore(false);
       }
-      
+
       if (page === 1) {
         setClients(response);
       } else {
-        setClients(prev => [...prev, ...response]);
+        setClients((prev) => [...prev, ...response]);
       }
     } catch (error) {
-      console.error('Error fetching clients:', error);
-      Alert.alert('Erro', 'Não foi possível carregar os clientes.');
+      console.error("Error fetching clients:", error);
+      Alert.alert("Erro", "Não foi possível carregar os clientes.");
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -164,7 +178,7 @@ export default function ClientesScreen() {
 
   const loadMore = () => {
     if (!loading && hasMore) {
-      setPage(prev => prev + 1);
+      setPage((prev) => prev + 1);
     }
   };
 
@@ -172,51 +186,61 @@ export default function ClientesScreen() {
   const filteredClients = React.useMemo(() => {
     if (!searchText) return clients;
 
-    return clients.filter(client => {
+    return clients.filter((client) => {
       const searchLower = searchText.toLowerCase();
-      
-      // Map filter keys to client properties
-      const fieldMap: Record<keyof Filters, keyof ClientesApp> = {
-        codigo: 'codcli',
-        razaoSocial: 'razao',
-        cidade: 'cidade',
-        uf: 'estado',
-        telefone: 'fone',
-        email: 'email'
-      };
-      
-      const fieldsToSearch = Object.keys(filters)
-        .filter(key => filters[key as keyof Filters])
-        .map(key => fieldMap[key as keyof Filters]);
 
-      return fieldsToSearch.some(field => {
-        const value = client[field];
-        return value && value.toString().toLowerCase().includes(searchLower);
-      });
+      // Map filter keys to client properties
+      // const fieldMap: Record<keyof Filters, keyof ClientesApp> = {
+      //   codigo: 'codcli',
+      //   razaoSocial: 'razao',
+      //   cidade: 'cidade',
+      //   uf: 'estado',
+      //   telefone: 'fone',
+      //   email: 'email'
+      // };
+
+      // const fieldsToSearch = Object.keys(filters)
+      //   .filter(key => filters[key as keyof Filters])
+      //   .map(key => fieldMap[key as keyof Filters]);
+
+      // return fieldsToSearch.some(field => {
+      //   const value = client[field];
+      //   return value && value.toString().toLowerCase().includes(searchLower);
+      // });
+
+      // Simplified search across all fields
+      return (
+        client.codcli.toString().toLowerCase().includes(searchLower) ||
+        client.razao?.toLowerCase().includes(searchLower) ||
+        client.cidade?.toLowerCase().includes(searchLower) ||
+        client.estado?.toLowerCase().includes(searchLower) ||
+        client.fone?.toLowerCase().includes(searchLower) ||
+        client.email?.toLowerCase().includes(searchLower)
+      );
     });
-  }, [clients, searchText, filters]);
+  }, [clients, searchText]);
 
   const handleClientPress = (client: ClientesApp) => {
     router.push({
-      pathname: '/(tabs)/cliente-detalhes',
+      pathname: "/(tabs)/cliente-detalhes",
       params: {
         id: client.id.toString(),
         codcli: client.codcli.toString(),
-        razao: client.razao || '',
-        fantasia: client.fantasia || '',
-        cidade: client.cidade || '',
-        estado: client.estado || '',
-        fone: client.fone || '',
-        contato: client.contato || '',
-        email: client.email || '',
-        pessoa: client.pessoa || '',
-        cnpj_cpf: client.cnpj_cpf || '',
-        ie_rg: client.ie_rg || '',
-        endereco: client.endereco || '',
-        bairro: client.bairro || '',
-        cep: client.cep || '',
-        pais: client.pais || ''
-      }
+        razao: client.razao || "",
+        fantasia: client.fantasia || "",
+        cidade: client.cidade || "",
+        estado: client.estado || "",
+        fone: client.fone || "",
+        contato: client.contato || "",
+        email: client.email || "",
+        pessoa: client.pessoa || "",
+        cnpj_cpf: client.cnpj_cpf || "",
+        ie_rg: client.ie_rg || "",
+        endereco: client.endereco || "",
+        bairro: client.bairro || "",
+        cep: client.cep || "",
+        pais: client.pais || "",
+      },
     });
   };
 
@@ -224,16 +248,27 @@ export default function ClientesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient
-          colors={['#229dc9', '#1a7fa3']}
+          colors={["#229dc9", "#1a7fa3"]}
           style={styles.headerGradient}
         >
           <View style={styles.header}>
             <View style={styles.headerContent}>
-              <MaterialCommunityIcons name="account-group" size={32} color="#fff" />
+              <Image
+                source={require("../../assets/images/LogoADPG.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
               <ThemedText style={styles.title}>Clientes</ThemedText>
             </View>
-            <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(tabs)/perfil')}>
-              <MaterialCommunityIcons name="account-circle" size={32} color="#fff" />
+            <TouchableOpacity
+              style={styles.profileButton}
+              onPress={() => router.push("/(tabs)/perfil")}
+            >
+              <MaterialCommunityIcons
+                name="account-circle"
+                size={32}
+                color="#fff"
+              />
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -247,16 +282,27 @@ export default function ClientesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#229dc9', '#1a7fa3']}
+        colors={["#229dc9", "#1a7fa3"]}
         style={styles.headerGradient}
       >
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            <MaterialCommunityIcons name="account-group" size={32} color="#fff" />
+            <Image
+              source={require("../../assets/images/LogoADPG.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <ThemedText style={styles.title}>Clientes</ThemedText>
           </View>
-          <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(tabs)/perfil')}>
-            <MaterialCommunityIcons name="account-circle" size={32} color="#fff" />
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => router.push("/(tabs)/perfil")}
+          >
+            <MaterialCommunityIcons
+              name="account-circle"
+              size={32}
+              color="#fff"
+            />
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -271,20 +317,20 @@ export default function ClientesScreen() {
             onChangeText={setSearchText}
           />
           {searchText ? (
-            <TouchableOpacity onPress={() => setSearchText('')}>
+            <TouchableOpacity onPress={() => setSearchText("")}>
               <MaterialCommunityIcons name="close" size={24} color="#666" />
             </TouchableOpacity>
           ) : null}
         </View>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilters(!showFilters)}
         >
           <MaterialCommunityIcons name="filter" size={24} color="#fff" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
-      {showFilters && (
+      {/* {showFilters && (
         <ThemedView style={styles.filtersContainer}>
           <ThemedText style={styles.filtersTitle}>Filtrar por:</ThemedText>
           <View style={styles.filterOptions}>
@@ -338,13 +384,15 @@ export default function ClientesScreen() {
             </TouchableOpacity>
           </View>
         </ThemedView>
-      )}
+      )} */}
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         onScroll={({ nativeEvent }) => {
           const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+          const isEndReached =
+            layoutMeasurement.height + contentOffset.y >=
+            contentSize.height - 20;
           if (isEndReached) {
             loadMore();
           }
@@ -360,31 +408,54 @@ export default function ClientesScreen() {
                 onPress={() => handleClientPress(client)}
               >
                 <View style={styles.clientHeader}>
-                  <ThemedText style={styles.clientCode}>{client.codcli}</ThemedText>
-                  <ThemedText style={styles.clientName}>{client.razao || client.fantasia}</ThemedText>
+                  <ThemedText style={styles.clientCode}>
+                    {client.codcli}
+                  </ThemedText>
+                  <ThemedText style={styles.clientName}>
+                    {client.razao || client.fantasia}
+                  </ThemedText>
                 </View>
                 <View style={styles.clientDetails}>
-                  <View style={styles.detailRow}>
-                    <View style={styles.detailItem}>
-                      <MaterialCommunityIcons name="map-marker" size={16} color="#666" />
-                      <ThemedText style={styles.detailText}>
-                        {client.cidade}{client.estado ? `, ${client.estado}` : ''}
-                      </ThemedText>
-                    </View>
-                    <View style={styles.detailItem}>
-                      <MaterialCommunityIcons name="phone" size={16} color="#666" />
-                      <ThemedText style={styles.detailText}>{client.fone || '-'}</ThemedText>
-                    </View>
+                  <View style={styles.detailItem}>
+                    <MaterialCommunityIcons
+                      name="map-marker"
+                      size={16}
+                      color="#666"
+                    />
+                    <ThemedText style={styles.detailText}>
+                      {client.cidade}
+                      {client.estado ? `, ${client.estado}` : ""}
+                    </ThemedText>
                   </View>
-                  <View style={styles.detailRow}>
-                    <View style={styles.detailItem}>
-                      <MaterialCommunityIcons name="account" size={16} color="#666" />
-                      <ThemedText style={styles.detailText}>{client.contato || '-'}</ThemedText>
-                    </View>
-                    <View style={styles.detailItem}>
-                      <MaterialCommunityIcons name="email" size={16} color="#666" />
-                      <ThemedText style={styles.detailText}>{client.email || '-'}</ThemedText>
-                    </View>
+                  <View style={styles.detailItem}>
+                    <MaterialCommunityIcons
+                      name="phone"
+                      size={16}
+                      color="#666"
+                    />
+                    <ThemedText style={styles.detailText}>
+                      {client.fone || "-"}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <MaterialCommunityIcons
+                      name="account"
+                      size={16}
+                      color="#666"
+                    />
+                    <ThemedText style={styles.detailText}>
+                      {client.contato || "-"}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <MaterialCommunityIcons
+                      name="email"
+                      size={16}
+                      color="#666"
+                    />
+                    <ThemedText style={styles.detailText}>
+                      {client.email || "-"}
+                    </ThemedText>
                   </View>
                 </View>
                 <View style={styles.clientActions}>
@@ -393,15 +464,19 @@ export default function ClientesScreen() {
                     onPress={(e) => {
                       e.stopPropagation();
                       router.push({
-                        pathname: '/(tabs)/cliente-vendas',
-                        params: { 
+                        pathname: "/(tabs)/cliente-vendas",
+                        params: {
                           codcli: client.codcli.toString(),
-                          razao: client.razao || client.fantasia || ''
-                        }
+                          razao: client.razao || client.fantasia || "",
+                        },
                       });
                     }}
                   >
-                    <MaterialCommunityIcons name="file-document-outline" size={20} color="#229dc9" />
+                    <MaterialCommunityIcons
+                      name="file-document-outline"
+                      size={20}
+                      color="#229dc9"
+                    />
                     <ThemedText style={styles.actionText}>Vendas</ThemedText>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -409,15 +484,19 @@ export default function ClientesScreen() {
                     onPress={(e) => {
                       e.stopPropagation();
                       router.push({
-                        pathname: '/(tabs)/cliente-produtos',
-                        params: { 
+                        pathname: "/(tabs)/cliente-produtos",
+                        params: {
                           codcli: client.codcli.toString(),
-                          razao: client.razao || client.fantasia || ''
-                        }
+                          razao: client.razao || client.fantasia || "",
+                        },
                       });
                     }}
                   >
-                    <MaterialCommunityIcons name="package-variant" size={20} color="#229dc9" />
+                    <MaterialCommunityIcons
+                      name="package-variant"
+                      size={20}
+                      color="#229dc9"
+                    />
                     <ThemedText style={styles.actionText}>Produtos</ThemedText>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -425,15 +504,19 @@ export default function ClientesScreen() {
                     onPress={(e) => {
                       e.stopPropagation();
                       router.push({
-                        pathname: '/(tabs)/cliente-titulos',
-                        params: { 
+                        pathname: "/(tabs)/cliente-titulos",
+                        params: {
                           codcli: client.codcli.toString(),
-                          razao: client.razao || client.fantasia || ''
-                        }
+                          razao: client.razao || client.fantasia || "",
+                        },
                       });
                     }}
                   >
-                    <MaterialCommunityIcons name="cash-multiple" size={20} color="#229dc9" />
+                    <MaterialCommunityIcons
+                      name="cash-multiple"
+                      size={20}
+                      color="#229dc9"
+                    />
                     <ThemedText style={styles.actionText}>Títulos</ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -441,17 +524,23 @@ export default function ClientesScreen() {
             ))
           ) : (
             <ThemedView style={styles.emptyState}>
-              <MaterialCommunityIcons name="account-search" size={48} color="#ccc" />
+              <MaterialCommunityIcons
+                name="account-search"
+                size={48}
+                color="#ccc"
+              />
               <ThemedText style={styles.emptyStateText}>
                 Nenhum cliente encontrado
               </ThemedText>
             </ThemedView>
           )}
-          
+
           {loading && clients.length > 0 && (
             <View style={styles.loadingMore}>
               <ActivityIndicator size="small" color="#229dc9" />
-              <ThemedText style={styles.loadingMoreText}>Carregando mais clientes...</ThemedText>
+              <ThemedText style={styles.loadingMoreText}>
+                Carregando mais clientes...
+              </ThemedText>
             </View>
           )}
         </ThemedView>
@@ -463,44 +552,44 @@ export default function ClientesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   headerGradient: {
     paddingTop: 40,
     paddingBottom: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
     marginLeft: 10,
   },
   profileButton: {
     padding: 5,
   },
   searchContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   searchInputContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
     borderRadius: 8,
     paddingHorizontal: 10,
     marginRight: 10,
@@ -511,45 +600,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   filterButton: {
-    backgroundColor: '#229dc9',
+    backgroundColor: "#229dc9",
     width: 40,
     height: 40,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   filtersContainer: {
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   filtersTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   filterOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: -5,
   },
   filterOption: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     margin: 5,
   },
   filterOptionActive: {
-    backgroundColor: '#229dc9',
+    backgroundColor: "#229dc9",
   },
   filterText: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   filterTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
   scrollContainer: {
     flex: 1,
@@ -558,11 +647,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   clientCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 10,
     marginBottom: 15,
     padding: 15,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -573,72 +662,77 @@ const styles = StyleSheet.create({
   },
   clientCode: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   clientName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   clientDetails: {
     marginBottom: 15,
   },
   detailRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 8,
   },
   detailItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
   detailText: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     marginLeft: 5,
   },
   clientActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: "#eee",
     paddingTop: 10,
   },
   actionButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 5,
   },
   actionText: {
     fontSize: 14,
-    color: '#229dc9',
+    color: "#229dc9",
     marginLeft: 5,
   },
   emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 30,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 10,
   },
   emptyStateText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingMore: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 15,
   },
   loadingMoreText: {
     marginLeft: 10,
-    color: '#666',
+    color: "#666",
+  },
+  logo: {
+    width: 32,
+    height: 32,
+    marginRight: 10,
   },
 });
