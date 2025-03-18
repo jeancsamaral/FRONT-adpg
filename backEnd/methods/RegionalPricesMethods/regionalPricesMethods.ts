@@ -35,6 +35,7 @@ export async function getFilteredRegionalPrices(
   limit: number,
   token: string
 ) {
+  console.log("filterObject", filterObject);
   if (environment.appState === "OFFLINE") {
     return Promise.resolve(mockedRegionalPrices);
   }

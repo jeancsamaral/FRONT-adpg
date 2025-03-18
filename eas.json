@@ -3,7 +3,8 @@
       "preview": {
         "android": {
           "buildType": "apk"
-        }
+        },
+        "distribution": "internal"
       },
       "development": {
         "android": {
@@ -24,7 +25,11 @@
         },
         "ios": {
           "distribution": "store"
-        }
+        },
+        "distribution": "store"
       }
+    },
+    "cli": {
+      "version": ">= 0.38.3"
     }
   }

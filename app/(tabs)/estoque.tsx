@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput, Modal, ActivityIndicator } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, Alert, Clipboard, TextInput, Modal, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
@@ -11,14 +11,22 @@ import { useAuth } from '../context/AuthContext';
 // Initialize ApiCaller
 const apiCaller = new ApiCaller();
 
-// Adicione os dados de exemplo para grupos
-const gruposData = [
-  { id: '1', nome: 'Aditivos' },
-  { id: '2', nome: 'Polímeros' },
-  { id: '3', nome: 'Solventes' },
-  { id: '4', nome: 'Catalisadores' },
-  { id: '5', nome: 'Resinas' }
-];
+// Interface for product type
+interface Product {
+  codigo: string;
+  descricao: string;
+  un: string;
+  moeda: string;
+  venda: string;
+  estoque: string;
+  grupo: string;
+}
+
+// Interface for group type
+interface Group {
+  codgru: string;
+  grupo: string;
+}
 
 // Atualize a interface de filtros
 interface Filters {
@@ -30,7 +38,12 @@ interface Filters {
 export default function EstoqueScreen() {
   const router = useRouter();
   const { token } = useAuth();
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showGrupoSelect, setShowGrupoSelect] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -38,54 +51,99 @@ export default function EstoqueScreen() {
     codigo: '',
     descricao: ''
   });
-  const [loading, setLoading] = useState(true);
+  const [debouncedFilters, setDebouncedFilters] = useState<Filters>(filters);
 
+  // Debounced filter effect
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 500);
 
-  const fetchProducts = async () => {
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  // Effect to fetch data when debounced filters change
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    setIsUpdating(true);
+    fetchProducts(1, debouncedFilters);
+  }, [debouncedFilters]);
+
+  const fetchProducts = async (pageNumber: number, filterParams?: Filters) => {
+    console.log('fetchProducts', pageNumber, filterParams);
     if (!token) {
       Alert.alert('Erro', 'Token de autenticação não encontrado.');
       return;
     }
 
     try {
-      setLoading(true);
-      const response = await apiCaller.productMethods.getProducts({}, 1, 100, token);
-      setProducts(response);
+      const filterObject = filterParams && (filterParams.codigo || filterParams.descricao || filterParams.grupo)
+        ? {
+            codproduto: filterParams.codigo,
+            descricao: filterParams.descricao,
+            codgru: filterParams.grupo
+          }
+        : {};
+
+      const response = await apiCaller.productMethods.getProducts(
+        filterObject,
+        pageNumber,
+        10,
+        token
+      );
+
+      if (response.groups) {
+        setGroups(response.groups);
+      }
+
+      if (Array.isArray(response.products)) {
+        if (response.products.length === 0) {
+          setHasMore(false);
+        } else {
+          if (pageNumber === 1) {
+            setProducts(response.products);
+          } else {
+            setProducts(prev => [...prev, ...response.products]);
+          }
+        }
+      } else {
+        console.error("Expected an array but got:", response.products);
+        setHasMore(false);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       Alert.alert('Erro', 'Não foi possível carregar os produtos.');
+      setHasMore(false);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setIsUpdating(false);
     }
   };
 
-  // Função para filtrar os produtos
-  const filteredProducts = React.useMemo(() => {
-    let filtered = products;
+  // Handle filter changes
+  const handleFilterChange = (field: keyof Filters, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
 
-    if (filters.grupo) {
-      filtered = filtered.filter((product: any) => product.grupo === filters.grupo);
-    }
-    if (filters.codigo) {
-      filtered = filtered.filter((product: any) => 
-        product.codigo.toLowerCase().includes(filters.codigo.toLowerCase())
-      );
-    }
-    if (filters.descricao) {
-      filtered = filtered.filter((product: any) => 
-        product.descricao.toLowerCase().includes(filters.descricao.toLowerCase())
-      );
-    }
+  // Handle filter clear
+  const handleClearFilters = () => {
+    setFilters({ grupo: '', codigo: '', descricao: '' });
+    setShowGrupoSelect(false);
+  };
 
-    return filtered;
-  }, [products, filters]);
+  const handleLoadMore = () => {
+    if (!isUpdating && hasMore) {
+      setIsUpdating(true);
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchProducts(nextPage, debouncedFilters);
+    }
+  };
 
-  const handleFilter = () => {
-    // Aqui você pode adicionar lógica adicional antes de aplicar os filtros
-    // Como validações ou chamadas à API
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
+    const paddingToBottom = 20;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
   };
 
   const handleProductPress = (product: any) => {
@@ -97,6 +155,10 @@ export default function EstoqueScreen() {
       },
     });
   };
+
+  if (initialLoading) {
+    return <ActivityIndicator size="large" color="#229dc9" />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -122,7 +184,15 @@ export default function EstoqueScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView 
+        style={styles.scrollContainer}
+        onScroll={({ nativeEvent }) => {
+          if (isCloseToBottom(nativeEvent)) {
+            handleLoadMore();
+          }
+        }}
+        scrollEventThrottle={400}
+      >
         <ThemedView style={styles.contentContainer}>
           {/* Container para os botões */}
           <View style={styles.headerButtons}>
@@ -131,7 +201,9 @@ export default function EstoqueScreen() {
               onPress={() => setShowFilters(!showFilters)}
             >
               <MaterialCommunityIcons name="filter-variant" size={24} color="#229dc9" />
-              <ThemedText style={styles.filterButtonText}>Filtrar</ThemedText>
+              <ThemedText style={styles.filterButtonText}>
+                Filtrar {isUpdating && '(Atualizando...)'}
+              </ThemedText>
             </TouchableOpacity>
           </View>
 
@@ -143,20 +215,65 @@ export default function EstoqueScreen() {
                 <ThemedText style={styles.filterLabel}>Grupo</ThemedText>
                 <TouchableOpacity
                   style={styles.select}
-                  onPress={() => setShowGrupoSelect(!showGrupoSelect)}
+                  onPress={() => setShowGrupoSelect(true)}
                 >
                   <ThemedText style={styles.selectText}>
                     {filters.grupo 
-                      ? gruposData.find(g => g.id === filters.grupo)?.nome 
+                      ? groups.find(g => g.codgru === filters.grupo)?.grupo 
                       : 'Selecione um grupo'}
                   </ThemedText>
                   <MaterialCommunityIcons 
-                    name={showGrupoSelect ? "chevron-up" : "chevron-down"} 
+                    name="chevron-down"
                     size={20} 
                     color="#666" 
                   />
                 </TouchableOpacity>
               </View>
+
+              <Modal
+                visible={showGrupoSelect}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowGrupoSelect(false)}
+              >
+                <TouchableWithoutFeedback onPress={() => setShowGrupoSelect(false)}>
+                  <View style={styles.modalOverlay}>
+                    <TouchableWithoutFeedback>
+                      <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                          <ThemedText style={styles.modalTitle}>Selecione um grupo</ThemedText>
+                          <TouchableOpacity onPress={() => setShowGrupoSelect(false)}>
+                            <MaterialCommunityIcons name="close" size={24} color="#666" />
+                          </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles.modalScroll}>
+                          <TouchableOpacity
+                            style={styles.modalItem}
+                            onPress={() => {
+                              handleFilterChange('grupo', '');
+                              setShowGrupoSelect(false);
+                            }}
+                          >
+                            <ThemedText style={styles.modalItemText}>Todos os grupos</ThemedText>
+                          </TouchableOpacity>
+                          {groups.map((grupo) => (
+                            <TouchableOpacity
+                              key={grupo.codgru}
+                              style={styles.modalItem}
+                              onPress={() => {
+                                handleFilterChange('grupo', grupo.codgru);
+                                setShowGrupoSelect(false);
+                              }}
+                            >
+                              <ThemedText style={styles.modalItemText}>{grupo.grupo}</ThemedText>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    </TouchableWithoutFeedback>
+                  </View>
+                </TouchableWithoutFeedback>
+              </Modal>
 
               {/* Filtro por Código */}
               <View style={styles.filterField}>
@@ -164,7 +281,7 @@ export default function EstoqueScreen() {
                 <TextInput
                   style={styles.input}
                   value={filters.codigo}
-                  onChangeText={(text) => setFilters(prev => ({ ...prev, codigo: text }))}
+                  onChangeText={(text) => handleFilterChange('codigo', text)}
                   placeholder="Digite o código"
                 />
               </View>
@@ -175,7 +292,7 @@ export default function EstoqueScreen() {
                 <TextInput
                   style={styles.input}
                   value={filters.descricao}
-                  onChangeText={(text) => setFilters(prev => ({ ...prev, descricao: text }))}
+                  onChangeText={(text) => handleFilterChange('descricao', text)}
                   placeholder="Digite a descrição"
                 />
               </View>
@@ -184,139 +301,72 @@ export default function EstoqueScreen() {
               <View style={styles.filterActions}>
                 <TouchableOpacity 
                   style={styles.clearButton}
-                  onPress={() => {
-                    setFilters({ grupo: '', codigo: '', descricao: '' });
-                    setShowGrupoSelect(false);
-                  }}
+                  onPress={handleClearFilters}
                 >
                   <ThemedText style={styles.clearButtonText}>Limpar</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.searchButton}
-                  onPress={handleFilter}
-                >
-                  <MaterialCommunityIcons name="magnify" size={20} color="#fff" />
-                  <ThemedText style={styles.searchButtonText}>Buscar</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
           )}
 
-          {loading ? (
-            <ActivityIndicator size="large" color="#229dc9" />
-          ) : (
-            <ThemedView style={styles.table}>
-              {filteredProducts.map((item: any) => (
-                <TouchableOpacity
-                  key={item.codigo}
-                  onPress={() => handleProductPress(item)}
-                >
-                  <ThemedView style={styles.tableRow}>
-                    <View style={styles.rowHeader}>
-                      <ThemedText style={styles.codigo}>
-                        {item.codigo}
-                      </ThemedText>
-                      <ThemedText style={styles.descricao}>
-                        {item.descricao}
-                      </ThemedText>
-                    </View>
+          <ThemedView style={[styles.table, isUpdating && styles.updatingTable]}>
+            {products.map((item: any) => (
+              <TouchableOpacity
+                key={item.codigo}
+                onPress={() => handleProductPress(item)}
+              >
+                <ThemedView style={styles.tableRow}>
+                  <View style={styles.rowHeader}>
+                    <ThemedText style={styles.codigo}>
+                      {item.codigo}
+                    </ThemedText>
+                    <ThemedText style={styles.descricao}>
+                      {item.descricao}
+                    </ThemedText>
+                  </View>
 
-                    <View style={styles.rowContent}>
-                      <View style={styles.column}>
-                        <View style={styles.cell}>
-                          <ThemedText style={styles.label}>Un.</ThemedText>
-                          <ThemedText style={styles.value}>
-                            {item.un}
-                          </ThemedText>
-                        </View>
-                        <View style={styles.cell}>
-                          <ThemedText style={styles.label}>Moeda</ThemedText>
-                          <ThemedText style={styles.value}>
-                            {item.moeda}
-                          </ThemedText>
-                        </View>
+                  <View style={styles.rowContent}>
+                    <View style={styles.column}>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Un.</ThemedText>
+                        <ThemedText style={styles.value}>
+                          {item.un}
+                        </ThemedText>
                       </View>
-                      <View style={styles.column}>
-                        <View style={styles.cell}>
-                          <ThemedText style={styles.label}>Venda</ThemedText>
-                          <ThemedText style={styles.value}>
-                            {item.venda}
-                          </ThemedText>
-                        </View>
-                        <View style={styles.cell}>
-                          <ThemedText style={styles.label}>Estoque</ThemedText>
-                          <ThemedText style={styles.value}>
-                            {item.estoque}
-                          </ThemedText>
-                        </View>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Moeda</ThemedText>
+                        <ThemedText style={styles.value}>
+                          {item.moeda}
+                        </ThemedText>
                       </View>
                     </View>
-                  </ThemedView>
-                  <View style={styles.statusContainer}>
-                    <View style={styles.cell}>
-                      <ThemedText style={[styles.label, styles.redText]}>Reservado</ThemedText>
-                      <ThemedText style={styles.redText}>{item.reservado}</ThemedText>
-                    </View>
-                    <View style={styles.cell}>
-                      <ThemedText style={[styles.label, styles.greenText]}>Comprado</ThemedText>
-                      <ThemedText style={styles.greenText}>{item.comprado}</ThemedText>
-                    </View>
-                    <View style={styles.cell}>
-                      <ThemedText style={[styles.label, styles.blueText]}>Disponível</ThemedText>
-                      <ThemedText style={styles.blueText}>{item.disponivel}</ThemedText>
+                    <View style={styles.column}>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Venda</ThemedText>
+                        <ThemedText style={styles.value}>
+                          {item.venda}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Estoque</ThemedText>
+                        <ThemedText style={styles.value}>
+                          {item.estoque}
+                        </ThemedText>
+                      </View>
                     </View>
                   </View>
-                </TouchableOpacity>
-              ))}
-            </ThemedView>
+                </ThemedView>
+              </TouchableOpacity>
+            ))}
+          </ThemedView>
+
+          {isUpdating && page > 1 && (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#229dc9" />
+            </View>
           )}
         </ThemedView>
       </ScrollView>
-
-      <Modal
-        visible={showGrupoSelect}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowGrupoSelect(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowGrupoSelect(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <ThemedText style={styles.modalTitle}>Selecione um grupo</ThemedText>
-              <TouchableOpacity onPress={() => setShowGrupoSelect(false)}>
-                <MaterialCommunityIcons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalScroll}>
-              <TouchableOpacity
-                style={styles.modalItem}
-                onPress={() => {
-                  setFilters(prev => ({ ...prev, grupo: '' }));
-                  setShowGrupoSelect(false);
-                }}
-              >
-                <ThemedText style={styles.modalItemText}>Todos os grupos</ThemedText>
-              </TouchableOpacity>
-              {gruposData.map((grupo) => (
-                <TouchableOpacity
-                  key={grupo.id}
-                  style={styles.modalItem}
-                  onPress={() => {
-                    setFilters(prev => ({ ...prev, grupo: grupo.id }));
-                    setShowGrupoSelect(false);
-                  }}
-                >
-                  <ThemedText style={styles.modalItemText}>{grupo.nome}</ThemedText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -457,6 +507,7 @@ const styles = StyleSheet.create({
   filterField: {
     gap: 8,
     position: 'relative',
+    zIndex: 1000,
   },
   filterLabel: {
     fontSize: 14,
@@ -472,6 +523,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    zIndex: 1000,
   },
   selectText: {
     fontSize: 16,
@@ -502,20 +554,12 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
   },
-  searchButton: {
-    flex: 1,
-    backgroundColor: '#229dc9',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
+  updatingTable: {
+    opacity: 0.7,
   },
-  searchButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    marginLeft: 8,
-    fontWeight: '500',
+  loadingMore: {
+    padding: 16,
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -523,7 +567,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
+  } as const,
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -534,7 +578,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-  },
+  } as const,
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -542,22 +586,22 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-  },
+  } as const,
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-  },
+  } as const,
   modalScroll: {
     maxHeight: 300,
-  },
+  } as const,
   modalItem: {
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-  },
+  } as const,
   modalItemText: {
     fontSize: 16,
     color: '#333',
-  },
+  } as const,
 });

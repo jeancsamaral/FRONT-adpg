@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   TouchableOpacity,
@@ -15,7 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ThemedText } from "../components/ThemedText";
 import { ThemedView } from "../components/ThemedView";
-import { useRouter } from "expo-router";
+import { router, useRouter } from "expo-router";
 import ApiCaller from "../../backEnd/apiCaller";
 import { useAuth } from "../context/AuthContext";
 import { ProdutosApp_PrecosRegiao } from "../../backEnd/interfaces";
@@ -39,10 +39,8 @@ const regioesICMS = [
 
 // Define the Filters interface
 interface Filters {
-  codigo: boolean;
-  descricao: boolean;
-  moeda: boolean;
-  ipi: boolean;
+  codigo: string;
+  descricao: string;
 }
 
 // Define the handlePricePress function
@@ -54,37 +52,113 @@ const handlePricePress = (item: ProdutosApp_PrecosRegiao) => {
 
 export default function PrecosScreen() {
     const [precosData, setPrecosData] = useState<ProdutosApp_PrecosRegiao[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [initialLoading, setInitialLoading] = useState<boolean>(true);
+    const [isUpdating, setIsUpdating] = useState<boolean>(false);
+    const [page, setPage] = useState<number>(1);
+    const [hasMore, setHasMore] = useState<boolean>(true);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filters, setFilters] = useState<Filters>({
+        codigo: '',
+        descricao: ''
+    });
+    const [debouncedFilters, setDebouncedFilters] = useState<Filters>(filters);
+    const { token } = useAuth();
+    // Debounced filter effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedFilters(filters);
+        }, 500);
 
-    useEffect(() => { 
-        const fetchPrecosData = async () => {
-            try {
-                const token = "your-auth-token"; // Replace with actual token retrieval logic
-                let response = await apiCaller.regionalPricesMethods.getAllRegionalPrices(1, 10, token);
-                console.log("FOO!",response);
-                response = response.regionalPrices;
-                console.log("FOO@",response);
-                
-                // Check if the response is an array
-                if (Array.isArray(response)) {
-                    console.log("isArr",response);
-                    setPrecosData(response);
-                } else {
-                    console.error("Expected an array but got:", response);
-                    setPrecosData([]); // Set to an empty array if the response is not an array
-                }
-            } catch (error) {
-                console.error("Error fetching prices data:", error);
-                setPrecosData([]); // Set to an empty array in case of error
-            } finally {
-                setLoading(false);
+        return () => clearTimeout(timer);
+    }, [filters]);
+
+    // Effect to fetch data when debounced filters change
+    useEffect(() => {
+        setPage(1);
+        setHasMore(true);
+        setIsUpdating(true);
+        fetchPrecosData(1, debouncedFilters);
+    }, [debouncedFilters]);
+
+    const fetchPrecosData = async (pageNumber: number, filterParams?: Filters) => {
+        try {
+            let response;
+            if (!token) {
+                Alert.alert('Erro', 'Informações do cliente não encontradas.');
+                router.back();
+                return;
             }
-        };
+            
+            if (filterParams && (filterParams.codigo || filterParams.descricao)) {
+                const filterObject = {
+                    codproduto: filterParams.codigo,
+                    descricao: filterParams.descricao
+                };
+                response = await apiCaller.regionalPricesMethods.getFilteredRegionalPrices(
+                    filterObject,
+                    pageNumber,
+                    10,
+                    token
+                );
+            } else {
+                response = await apiCaller.regionalPricesMethods.getAllRegionalPrices(pageNumber, 10, token);
+                response = response.regionalPrices;
+            }
+            
+            
+            if (Array.isArray(response)) {
+                if (response.length === 0) {
+                    setHasMore(false);
+                } else {
+                    if (pageNumber === 1) {
+                        setPrecosData(response);
+                    } else {
+                        setPrecosData(prev => [...prev, ...response]);
+                    }
+                }
+            } else {
+                console.error("Expected an array but got:", response);
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error("Error fetching prices data:", error);
+            setHasMore(false);
+        } finally {
+            setInitialLoading(false);
+            setIsUpdating(false);
+        }
+    };
 
-        fetchPrecosData();
+    // Initial data fetch
+    useEffect(() => {
+        fetchPrecosData(1);
     }, []);
 
-    if (loading) {
+    // Handle filter changes
+    const handleFilterChange = (field: keyof Filters, value: string) => {
+        setFilters(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Handle filter clear
+    const handleClearFilters = () => {
+        setFilters({ codigo: '', descricao: '' });
+    };
+
+    const handleLoadMore = () => {
+        if (!isUpdating && hasMore) {
+            setIsUpdating(true);
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchPrecosData(nextPage, debouncedFilters);
+        }
+    };
+
+    const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
+        const paddingToBottom = 20;
+        return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    };
+
+    if (initialLoading) {
         return <ActivityIndicator size="large" color="#0000ff" />;
     }
 
@@ -105,7 +179,15 @@ export default function PrecosScreen() {
                 </View>
             </LinearGradient>
 
-            <ScrollView style={styles.scrollContainer}>
+            <ScrollView 
+                style={styles.scrollContainer}
+                onScroll={({ nativeEvent }) => {
+                    if (isCloseToBottom(nativeEvent)) {
+                        handleLoadMore();
+                    }
+                }}
+                scrollEventThrottle={400}
+            >
                 <ThemedView style={styles.contentContainer}>
                     <ThemedView style={styles.icmsContainer}>
                         <ThemedText style={styles.sectionTitle}>Regiões ICMS</ThemedText>
@@ -117,16 +199,52 @@ export default function PrecosScreen() {
                         ))}
                     </ThemedView>
 
-                    <ThemedView style={styles.filterContainer}>
-                        <ThemedText style={styles.filterText}>
-                            <MaterialCommunityIcons name="filter" size={20} color="#000" /> Filtro
-                        </ThemedText>
-                        <ThemedText style={styles.filterSubtext}>
-                            (Clique aqui para expandir/esconder os campos de filtro)
-                        </ThemedText>
-                    </ThemedView>
+                    <TouchableOpacity 
+                        style={styles.filterContainer}
+                        onPress={() => setShowFilters(!showFilters)}
+                    >
+                        <View style={styles.filterHeader}>
+                            <MaterialCommunityIcons name="filter-variant" size={24} color="#229dc9" />
+                            <ThemedText style={styles.filterText}>
+                                Filtros {isUpdating && '(Atualizando...)'}
+                            </ThemedText>
+                        </View>
+                    </TouchableOpacity>
 
-                    <ThemedView style={styles.table}>
+                    {showFilters && (
+                        <View style={styles.filterArea}>
+                            <View style={styles.filterField}>
+                                <ThemedText style={styles.filterLabel}>Código</ThemedText>
+                                <TextInput
+                                    style={styles.input}
+                                    value={filters.codigo}
+                                    onChangeText={(text) => handleFilterChange('codigo', text)}
+                                    placeholder="Digite o código"
+                                />
+                            </View>
+
+                            <View style={styles.filterField}>
+                                <ThemedText style={styles.filterLabel}>Descrição</ThemedText>
+                                <TextInput
+                                    style={styles.input}
+                                    value={filters.descricao}
+                                    onChangeText={(text) => handleFilterChange('descricao', text)}
+                                    placeholder="Digite a descrição"
+                                />
+                            </View>
+
+                            <View style={styles.filterActions}>
+                                <TouchableOpacity 
+                                    style={styles.clearButton}
+                                    onPress={handleClearFilters}
+                                >
+                                    <ThemedText style={styles.clearButtonText}>Limpar</ThemedText>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+
+                    <ThemedView style={[styles.table, isUpdating && styles.updatingTable]}>
                         {precosData.map((item, index) => (
                             <ThemedView key={index} style={styles.tableRow}>
                                 <View style={styles.rowHeader}>
@@ -209,6 +327,12 @@ export default function PrecosScreen() {
                             </ThemedView>
                         ))}
                     </ThemedView>
+                    
+                    {isUpdating && page > 1 && (
+                        <View style={styles.loadingMore}>
+                            <ActivityIndicator size="small" color="#229dc9" />
+                        </View>
+                    )}
                 </ThemedView>
             </ScrollView>
         </SafeAreaView>
@@ -289,28 +413,64 @@ const styles = StyleSheet.create({
     },
     filterContainer: {
         padding: 12,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 4,
+        backgroundColor: '#fff',
+        borderRadius: 8,
         marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    filterHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
     filterText: {
         fontSize: 16,
         fontWeight: '600',
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        padding: 0,
-        alignContent: 'center',
         color: '#000',
     },
-    filterSubtext: {
+    filterArea: {
+        padding: 12,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    filterField: {
+        marginBottom: 12,
+    },
+    filterLabel: {
         fontSize: 12,
+        fontWeight: '600',
         color: '#666',
     },
-    iconSmall: {
-        width: 20,
-        height: 20,
+    input: {
+        padding: 8,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 4,
+    },
+    filterActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    clearButton: {
+        padding: 8,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 4,
+    },
+    clearButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#229dc9',
     },
     table: {
         gap: 16,
@@ -390,5 +550,12 @@ const styles = StyleSheet.create({
         color: '#333',
         fontWeight: '500',
         marginRight: 12,
+    },
+    loadingMore: {
+        padding: 16,
+        alignItems: 'center',
+    },
+    updatingTable: {
+        opacity: 0.7,
     },
 }); 

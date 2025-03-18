@@ -17,70 +17,53 @@ export default function ProdutoDetalhesScreen() {
   const params = useLocalSearchParams();
   const { token } = useAuth();
   const [product, setProduct] = useState<ProdutosApp | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProductDetails();
   }, []);
 
   const fetchProductDetails = async () => {
-    // Check if we already have the product data in params
-    if (params.codigo && params.descricao) {
-      // If we have the product data in params, use it directly
-      setProduct({
-        id: parseInt(params.id as string) || 0,
-        codprod: parseInt(params.codigo as string) || 0,
-        codproduto: params.codigo as string || '',
-        descricao: params.descricao as string || '',
-        unidadeDePeso: params.un as string || '',
-        moeda: params.moeda as string || '',
-        preco: parseFloat(params.venda as string) || 0,
-        estoque: parseFloat(params.estoque as string) || 0,
-        reservado: parseFloat(params.reservado as string) || 0,
-        comprado: parseFloat(params.comprado as string) || 0,
-        disponivel: parseFloat(params.disponivel as string) || 0,
-        codgru: 0, // Default value
-        GruposApp: null as any, // Default value
-        ClientesApp_Itens: [], // Default value
-        Lote: [], // Default value
-      });
-      return;
-    }
-
-    // If we don't have the product data in params, fetch it from the API
     if (!token || !params.id) {
-      router.replace('/login');
+      Alert.alert('Erro', 'Informações do produto não encontradas.');
+      router.back();
       return;
     }
 
     try {
-      // Fix the order of parameters to match the API method signature
-      const productId = parseInt(params.id as string);
-      const codprod = parseInt(params.codprod as string);
-      if (isNaN(productId)) {
-        Alert.alert('Erro', 'ID do produto inválido.');
-        router.back();
-        return;
-      }
+      const codproduto = params.id as string;
       
-      // Use the actual API call
-      const response = await apiCaller.productMethods.getProducts(
+      // Use the API call to get the complete product details
+      const { products } = await apiCaller.productMethods.getProducts(
         {
-          codprod: codprod.toString(),
+          codproduto: codproduto,
         },
         1,
-        10,
+        1,
         token
       );
-      console.log("response", response);
-      setProduct(response[0]);
+
+      if (products && products.length > 0) {
+        setProduct(products[0]);
+      } else {
+        Alert.alert('Erro', 'Produto não encontrado.');
+        router.back();
+      }
     } catch (error) {
       console.error('Error fetching product details:', error);
       Alert.alert('Erro', 'Não foi possível carregar os detalhes do produto.');
+      router.back();
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!product) {
+  if (loading) {
     return <ActivityIndicator size="large" color="#229dc9" />;
+  }
+
+  if (!product) {
+    return null;
   }
 
   return (
