@@ -117,8 +117,7 @@ export default function UsuariosScreen() {
       const response = await apiCaller.userMethods.getAllUsers(
         page,
         10,
-        token,
-        filterObject
+        token
       );
 
       if (Array.isArray(response.users)) {
@@ -350,6 +349,7 @@ export default function UsuariosScreen() {
               }}
             />
           )}
+          
 
           {isUpdating && page > 1 && (
             <View style={styles.loadingMore}>
