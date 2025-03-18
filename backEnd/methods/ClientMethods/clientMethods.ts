@@ -19,11 +19,17 @@ export async function updateClient(id: string, client: Partial<ClientesApp>, tok
     return useAxios(`/client/${id}`, token, client, 'put');
 }
 
-export async function getClientWithFilter(page: number, limit: number, token: string) {
+export async function getClientWithFilter(
+  page: number, 
+  limit: number, 
+  token: string,
+  searchText?: string
+) {
     if (environment.appState === "OFFLINE") {
         // Return paginated mock data
         const paginatedData = mockedClients.slice((page - 1) * limit, page * limit);
         return Promise.resolve(paginatedData);
     }
-    return useAxios(`/client/filtered?page=${page}&limit=${limit}`, token, null, 'get');
+    const searchParam = searchText ? `&search=${encodeURIComponent(searchText)}` : '';
+    return useAxios(`/client/filtered?page=${page}&limit=${limit}${searchParam}`, token, null, 'get');
 } 

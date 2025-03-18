@@ -91,6 +91,7 @@ export default function ClientesScreen() {
   const [clients, setClients] = useState<ClientesApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     codigo: true,
@@ -104,8 +105,27 @@ export default function ClientesScreen() {
   const [hasMore, setHasMore] = useState(true);
   const limit = 20;
 
+  // Add debounced search effect
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  // Effect to fetch data when debounced search changes
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
     fetchClients();
+  }, [debouncedSearchText]);
+
+  // Effect to fetch data when page changes
+  useEffect(() => {
+    if (page > 1) { // Only fetch if it's not the initial page
+      fetchClients();
+    }
   }, [page]);
 
   const fetchClients = async () => {
@@ -120,7 +140,8 @@ export default function ClientesScreen() {
       const response = await apiCaller.clientMethods.getClientWithFilter(
         page,
         limit,
-        token
+        token,
+        debouncedSearchText // Add search text to filter
       );
       
       if (response.length === 0) {
@@ -135,8 +156,7 @@ export default function ClientesScreen() {
     } catch (error) {
       console.error('Error fetching clients:', error);
       Alert.alert('Erro', 'Não foi possível carregar os clientes.');
-      // Use sample data as fallback
-      setClients(clientData);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }

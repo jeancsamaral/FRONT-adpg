@@ -65,6 +65,7 @@ export default function UsuariosScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<DisplayUser | undefined>(undefined);
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     codusr: true,
@@ -72,46 +73,87 @@ export default function UsuariosScreen() {
     supervisor: true,
     inativo: true,
   });
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const router = useRouter();
 
+  // Debounced search effect
   useEffect(() => {
-    if (token && user) {
-      if (user.isAdmin) {
-        fetchAllUsers();
-      } else {
-        Alert.alert('Acesso Negado', 'Você não tem permissão para visualizar todos os usuários.');
-      }
-    }
-  }, [token, user]);
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+    }, 500);
 
-  const fetchAllUsers = async () => {
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  // Effect to fetch data when debounced search or filters change
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    fetchUsers();
+  }, [debouncedSearchText, filters]);
+
+  const fetchUsers = async () => {
+    if (!token || !user) {
+      Alert.alert('Erro', 'Você precisa estar logado para acessar esta página.');
+      return;
+    }
+
+    if (!user.isAdmin) {
+      Alert.alert('Acesso Negado', 'Você não tem permissão para visualizar todos os usuários.');
+      return;
+    }
+
     try {
-      const allUsers = (await apiCaller.userMethods.getAllUsers(1, 100, token ?? '')).users;
-      setUsers(allUsers.map((u: UsuariosApp) => ({
-        ...u,
-        login: u.login?.login || '', // Map login to string, default to empty string if undefined
-      })));
+      setIsUpdating(true);
+      const filterObject = {
+        search: debouncedSearchText,
+        filters: Object.keys(filters).filter(key => filters[key as keyof Filters])
+      };
+
+      const response = await apiCaller.userMethods.getAllUsers(
+        page,
+        10,
+        token,
+        filterObject
+      );
+
+      if (Array.isArray(response.users)) {
+        if (response.users.length === 0) {
+          setHasMore(false);
+        } else {
+          setUsers(prev => page === 1 ? response.users : [...prev, ...response.users]);
+        }
+      } else {
+        console.error("Expected an array but got:", response.users);
+        setHasMore(false);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
       Alert.alert('Erro', 'Não foi possível carregar os usuários.');
+      setHasMore(false);
+    } finally {
+      setInitialLoading(false);
+      setIsUpdating(false);
     }
   };
 
-  // Função para filtrar os usuários baseado na busca e filtros
-  const filteredUsers = React.useMemo(() => {
-    if (!searchText) return users;
+  const handleLoadMore = () => {
+    if (!isUpdating && hasMore) {
+      setIsUpdating(true);
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchUsers();
+    }
+  };
 
-    return users.filter(user => {
-      const searchLower = searchText.toLowerCase();
-      const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
-
-      return fieldsToSearch.some(field => {
-        const value = user[field as keyof typeof user];
-        return value && value.toString().toLowerCase().includes(searchLower);
-      });
-    });
-  }, [users, searchText, filters]);
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
+    const paddingToBottom = 20;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+  };
 
   const handleCreateUser = async (userData: Partial<UsuarioAuth>) => {
     // Aqui você implementaria a lógica para criar um usuário
@@ -135,7 +177,7 @@ export default function UsuariosScreen() {
           profileAccess: [],
         }, token);
         Alert.alert('Sucesso', 'Usuário atualizado com sucesso!');
-        fetchAllUsers(); // Refresh the user list
+        fetchUsers(); // Refresh the user list
     } catch (error) {
         console.error('Error updating user:', error);
         Alert.alert('Erro', 'Não foi possível atualizar o usuário.');
@@ -172,12 +214,8 @@ export default function UsuariosScreen() {
     );
   };
 
-  if(!users){
-    return(
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#229dc9" />
-      </View>
-    )
+  if (initialLoading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
   }
 
   return (
@@ -200,7 +238,15 @@ export default function UsuariosScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView 
+        style={styles.scrollContainer}
+        onScroll={({ nativeEvent }) => {
+          if (isCloseToBottom(nativeEvent)) {
+            handleLoadMore();
+          }
+        }}
+        scrollEventThrottle={400}
+      >
         <ThemedView style={styles.contentContainer}>
           {!isEditing ? (
             <>
@@ -259,7 +305,7 @@ export default function UsuariosScreen() {
               </TouchableOpacity>
 
               <ThemedView style={styles.table}>
-                {filteredUsers.map((item) => (
+                {users.map((item) => (
                   <ThemedView key={item.id} style={styles.tableRow}>
                     <ThemedView style={styles.rowHeader}>
                       <ThemedText style={styles.codigo}>{item.codusr}</ThemedText>
@@ -303,6 +349,12 @@ export default function UsuariosScreen() {
                 setSelectedUser(undefined);
               }}
             />
+          )}
+
+          {isUpdating && page > 1 && (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color="#229dc9" />
+            </View>
           )}
         </ThemedView>
       </ScrollView>
@@ -476,5 +528,49 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 10,
     padding: 8,
+  },
+  userCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  userHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '500',
+    flex: 1,
+  },
+  userInfo: {
+    gap: 4,
+  },
+  userCode: {
+    fontSize: 14,
+    color: '#666',
+  },
+  userSupervisor: {
+    fontSize: 14,
+    color: '#666',
+  },
+  userStatus: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  activeStatus: {
+    color: '#34C759',
+  },
+  inactiveStatus: {
+    color: '#FF3B30',
+  },
+  loadingMore: {
+    padding: 16,
+    alignItems: 'center',
   },
 });
