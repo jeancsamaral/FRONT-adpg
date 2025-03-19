@@ -10,9 +10,11 @@ export async function createClientItems(item: ClientesApp_Itens, token: string) 
     return useAxios('/clientItems', token, item, 'post');
 }
 
-export async function getClientItemsByCodcli(codcli: string, page: number, limit: number, token: string) {
+export async function getClientItemsByCodcli(codcli: string, token: string) {
     if (environment.appState === 'OFFLINE') {
         return mockedClientItems;
     }
-    return useAxios(`/clientItems/${codcli}?page=${page}&limit=${limit}`, token, null, 'get');
+    const response = await useAxios(`/clientItems/${codcli}`, token, null, 'get');
+    console.log(response);
+    return response;
 }

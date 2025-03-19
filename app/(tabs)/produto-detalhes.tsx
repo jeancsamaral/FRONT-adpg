@@ -24,19 +24,19 @@ export default function ProdutoDetalhesScreen() {
   }, []);
 
   const fetchProductDetails = async () => {
-    if (!token || !params.id) {
+    if (!token || !params.codprod) {
       Alert.alert('Erro', 'Informações do produto não encontradas.');
       router.back();
       return;
     }
 
     try {
-      const codproduto = params.id as string;
+      const codprod = params.codprod as string;
       
       // Use the API call to get the complete product details
       const { products } = await apiCaller.productMethods.getProducts(
         {
-          codproduto: codproduto,
+          codprod: codprod,
         },
         1,
         1,

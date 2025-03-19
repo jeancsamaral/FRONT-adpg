@@ -34,10 +34,10 @@ export default function ClienteProdutosScreen() {
       // Get the client's products
       const itens = await apiCaller.clientItemsMethods.getClientItemsByCodcli(
         params.codcli as string,
-        1, // page
-        100, // limit
         token
       );
+
+      console.log(itens);
       
       setClienteItens(itens);
     } catch (error) {

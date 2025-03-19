@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Image, Platform, ActivityIndicator, Alert, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuthCheck } from '../hooks/useAuthCheck';
 
 import { Collapsible } from '@/components/Collapsible';
 import { ExternalLink } from '@/components/ExternalLink';
@@ -15,8 +16,8 @@ const apiCaller = new ApiCaller();
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const { token, loading: authLoading } = useAuthCheck();
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
   const [stats, setStats] = useState({
     clientCount: 0,
     productCount: 0,
@@ -24,15 +25,13 @@ export default function ExploreScreen() {
   });
 
   useEffect(() => {
-    // Get token from secure storage or context
-    // For now, using a dummy token
-    setToken('dummy-token');
-    fetchStats();
-  }, []);
+    if (token) {
+      fetchStats();
+    }
+  }, [token]);
 
   const fetchStats = async () => {
     if (!token) {
-      router.replace('/login');
       return;
     }
 

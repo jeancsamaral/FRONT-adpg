@@ -6,15 +6,16 @@ import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { ProdutosApp } from '../../backEnd/interfaces';
 import ApiCaller from '../../backEnd/apiCaller';
+import { useAuthCheck } from '../hooks/useAuthCheck';
 
 const apiCaller = new ApiCaller();
 
 export default function ProdutoForm() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { token, loading: authLoading } = useAuthCheck();
   const isEditing = params.isEditing === 'true';
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<ProdutosApp>>({
     codproduto: '',
@@ -29,18 +30,13 @@ export default function ProdutoForm() {
   });
 
   useEffect(() => {
-    // Get token from secure storage or context
-    // For now, using a dummy token
-    setToken('dummy-token');
-    
-    if (isEditing && params.id) {
+    if (token && isEditing && params.id) {
       fetchProductDetails(params.id as string);
     }
-  }, [params, isEditing]);
+  }, [params, isEditing, token]);
 
   const fetchProductDetails = async (productId: string) => {
     if (!token) {
-      router.replace('/login');
       return;
     }
 

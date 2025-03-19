@@ -5,13 +5,14 @@ import { ThemedView } from '../components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import ApiCaller from '../../backEnd/apiCaller';
 import { useRouter } from 'expo-router';
+import { useAuthCheck } from '../hooks/useAuthCheck';
 
 const apiCaller = new ApiCaller();
 
 export default function InfoScreen() {
   const router = useRouter();
+  const { token, loading: authLoading } = useAuthCheck();
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
   const [appInfo, setAppInfo] = useState({
     version: '1.0.0',
     buildNumber: '1',
@@ -23,15 +24,13 @@ export default function InfoScreen() {
   });
 
   useEffect(() => {
-    // Get token from secure storage or context
-    // For now, using a dummy token
-    setToken('dummy-token');
-    fetchAppInfo();
-  }, []);
+    if (token) {
+      fetchAppInfo();
+    }
+  }, [token]);
 
   const fetchAppInfo = async () => {
     if (!token) {
-      router.replace('/login');
       return;
     }
 

@@ -68,6 +68,7 @@ export default function EstoqueScreen() {
     setPage(1);
     setHasMore(true);
     setIsUpdating(true);
+    setProducts([]); // Reset products array before fetching with new filters
     fetchProducts(1, debouncedFilters);
   }, [debouncedFilters]);
 
@@ -149,8 +150,7 @@ export default function EstoqueScreen() {
     router.push({
       pathname: "/produto-detalhes",
       params: { 
-        id: product.codigo,
-        ...product 
+        codprod: product.codprod,
       },
     });
   };
