@@ -14,6 +14,7 @@ import { useRouter, Href } from 'expo-router'
 import { UsuariosApp, UsuarioAuth } from '../../backEnd/interfaces'
 import ApiCaller from '../../backEnd/apiCaller'
 import { useAuth } from '../context/AuthContext'
+import { useAuthCheck } from "../hooks/useAuthCheck";
 
 const apiCaller = new ApiCaller();
 
@@ -39,18 +40,18 @@ const menuItems: MenuItem[] = [
     subtitle: "Adicionar e gerenciar usuários do sistema",
     route: "/(tabs)/usuarios" as Href<string>
   },
-  {
-    icon: "shield-outline",
-    title: "Perfis de Acesso",
-    subtitle: "Gerenciar permissões de usuários",
-    route: "/(tabs)/perfis-acesso" as Href<string>
-  },
-  {
-    icon: "grid-outline",
-    title: "Configurar Colunas",
-    subtitle: "Visibilidade de dados por perfil",
-    route: "/(tabs)/config-colunas" as Href<string>
-  },
+  // {
+  //   icon: "shield-outline",
+  //   title: "Perfis de Acesso",
+  //   subtitle: "Gerenciar permissões de usuários",
+  //   route: "/(tabs)/perfis-acesso" as Href<string>
+  // },
+  // {
+  //   icon: "grid-outline",
+  //   title: "Configurar Colunas",
+  //   subtitle: "Visibilidade de dados por perfil",
+  //   route: "/(tabs)/config-colunas" as Href<string>
+  // },
   {
     icon: "log-out-outline",
     title: "Sair",
@@ -60,9 +61,10 @@ const menuItems: MenuItem[] = [
   }
 ];
 
-export default function ProfileScreen() {
+export default function PerfilScreen() {
   const router = useRouter()
-  const { token, logout } = useAuth();
+  const { token, loading: authLoading } = useAuthCheck();
+  const { logout } = useAuth();
   const [userData, setUserData] = useState<UsuariosApp | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -137,7 +139,7 @@ export default function ProfileScreen() {
               key={index}
               style={styles.menuItem}
               onPress={() => {
-                if (item.icon === 'log-out-outline') {
+                if (item.title === "Sair") {
                   handleLogout();
                 } else {
                   router.push(item.route);

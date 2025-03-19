@@ -59,29 +59,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: { login: string; password: string }) => {
     try {
-      console.log("login", credentials);
       setLoading(true);
-      const response = await apiCaller.authMethods.loginUser(
-        credentials,
-        '' // Initial token not needed for login
-      );
-
+      const response = await apiCaller.authMethods.loginUser(credentials, '');
       if (response && response.token) {
-        // Store both token and user data
-        await AsyncStorage.setItem('token', response.token);
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
-
         setAuthState({
           isAuthenticated: true,
           token: response.token,
           user: response.user,
         });
-
+        await AsyncStorage.setItem('token', response.token);
+        await AsyncStorage.setItem('user', JSON.stringify(response.user));
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Login error:', error);
       return false;
     } finally {
       setLoading(false);

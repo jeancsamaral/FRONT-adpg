@@ -29,11 +29,8 @@ export async function updateUserAuth(
   if (environment.appState === "OFFLINE") {
     return { data: { ...mockedUsers[0], ...user } };
   }
-  console.log("fooooo",user)
   return useAxios(`/user/user/auth/${id}`, token, user, "patch");
 }
-
-
 
 export async function getAllUsers(page: number, limit: number, token: string) {
   if (environment.appState === "OFFLINE") {
@@ -49,7 +46,13 @@ export async function getUser(id: string, token: string) {
   if (environment.appState === "OFFLINE") {
     return mockedUsers.find((user) => user.id.toString() === id);
   }
-  console.log("FOO!@#",id);
   return useAxios(`/user/user/${id}`, token, null, "get");
+}
+
+export async function deleteUserLogin(userId: number, token: string) {
+  if (environment.appState === "OFFLINE") {
+    return;
+  }
+  return useAxios(`/user/user/${userId}`, token, null, "delete");
 }
 

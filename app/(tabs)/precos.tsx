@@ -20,6 +20,7 @@ import ApiCaller from "../../backEnd/apiCaller";
 import { useAuth } from "../context/AuthContext";
 import { ProdutosApp_PrecosRegiao } from "../../backEnd/interfaces";
 import { Image } from "react-native";
+import { useAuthCheck } from "../hooks/useAuthCheck";
 // import filterIcon from "@/assets/images/filter.png";
 
 // Initialize ApiCaller
@@ -61,6 +62,8 @@ const handlePricePress = (item: ProdutosApp_PrecosRegiao) => {
 };
 
 export default function PrecosScreen() {
+    const router = useRouter();
+    const { token, loading: authLoading } = useAuthCheck();
     const [precosData, setPrecosData] = useState<ProdutosApp_PrecosRegiao[]>([]);
     const [initialLoading, setInitialLoading] = useState<boolean>(true);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
@@ -72,7 +75,7 @@ export default function PrecosScreen() {
         descricao: ''
     });
     const [debouncedFilters, setDebouncedFilters] = useState<Filters>(filters);
-    const { token } = useAuth();
+    const { token: authToken } = useAuth();
     // Debounced filter effect
     useEffect(() => {
         const timer = setTimeout(() => {

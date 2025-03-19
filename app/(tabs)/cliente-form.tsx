@@ -31,8 +31,6 @@ export default function ClienteFormScreen() {
   });
 
   const handleSave = async () => {
-    // Aqui você implementaria a lógica para salvar no backend
-    console.log('Salvando cliente:', formData);
     router.back();
   };
 

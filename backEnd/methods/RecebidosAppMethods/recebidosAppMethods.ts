@@ -15,6 +15,5 @@ export async function getRecebidosAppByCodcli(codcli: string, page: number, limi
         return mockedRecebidos;
     }
     const response = await useAxios(`/recebidosApp/${codcli}?page=${page}&limit=${limit}`, token, null, 'get');
-    console.log("response7", response);
     return response;
 }

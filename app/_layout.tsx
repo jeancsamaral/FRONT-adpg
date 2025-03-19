@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -13,13 +13,37 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [isReady, setIsReady] = useState(false);
+
+  const [fontsLoaded] = useFonts({
+    // Add your custom fonts here if any
+  });
 
   useEffect(() => {
-    // Redirect to login if not on login page
-    if (router.canGoBack()) {
+    async function prepare() {
+      try {
+        // Add any additional initialization logic here
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Give time for assets to load
+        setIsReady(true);
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        await SplashScreen.hideAsync();
+      }
+    }
+
+    prepare();
+  }, []);
+
+  useEffect(() => {
+    if (isReady && router.canGoBack()) {
       router.replace('/login');
     }
-  }, []);
+  }, [isReady]);
+
+  if (!isReady || !fontsLoaded) {
+    return null;
+  }
 
   return (
     <AuthProvider>

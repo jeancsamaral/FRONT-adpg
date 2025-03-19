@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
+  StyleSheet, 
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
@@ -43,14 +43,12 @@ export default function UserDataScreen() {
     try {
       setLoading(true);
       const {user:userData,userAuth:userAuthData} = await apiCaller.userMethods.getUser(user?.id.toString() ?? '', token);
-      console.log("Fetched users:", userData);
 
       // Find the current user by ID
       const currentUser = userAuthData;
       if (currentUser) {
         setUserData(currentUser);
       } else {
-        console.warn("User not found, using fallback.");
         setUserData(userData); // Fallback to the first user
       }
     } catch (error) {

@@ -77,8 +77,6 @@ export default function ProdutoForm() {
     try {
       setLoading(true);
       
-      console.log('Saving product data:', formData);
-      
       if (isEditing && params.id) {
         Alert.alert('Sucesso', 'Produto atualizado com sucesso!');
       } else {
@@ -87,7 +85,6 @@ export default function ProdutoForm() {
       
       router.back();
     } catch (error) {
-      console.error('Error saving product:', error);
       Alert.alert('Erro', 'Não foi possível salvar o produto.');
     } finally {
       setLoading(false);

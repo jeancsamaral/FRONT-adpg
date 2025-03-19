@@ -30,7 +30,6 @@ export async function getNotaByClientId(codcli: string, token: string) {
     return mockedNota;
   }
   const response = await useAxios(`/notas/0?codcli=${codcli}`, token, null, "get");
-  console.log("response", response);
   return response;
 }
 

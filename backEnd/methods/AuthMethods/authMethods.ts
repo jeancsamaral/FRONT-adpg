@@ -8,9 +8,9 @@ export async function loginUser(
   token: string
 ) {
   if (environment.appState === "OFFLINE") {
-    console.log("Mocked user auth",mockedUserAuth);
     return {mockedUserAuth, token: "mockedToken"};
   }
+  console.log("credentials",credentials);
   return useAxios("/auth/login", token, credentials, "post");
 }
 

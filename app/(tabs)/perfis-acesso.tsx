@@ -86,7 +86,6 @@ export default function AccessProfilesScreen() {
       // Assuming we're getting the current user's data
       // In a real app, you might get the user ID from params or context
       const {userAuth:userAuthData} = await apiCaller.userMethods.getUser(user?.id.toString() ?? '', token);
-      console.log("Fetched userAuth:", userAuthData);
       if (userAuthData) {
         setUserData(userAuthData); // For demo, just using the first user
         
@@ -145,9 +144,6 @@ export default function AccessProfilesScreen() {
         ...userData.login,
         profileAccess
       };
-      
-      // In a real implementation, you would call an API to update the user's permissions
-      console.log('Saving updated permissions:', profileAccess);
       
       // This is a placeholder for the actual API call
       // await apiCaller.authMethods.updateUserPermissions(userData.id.toString(), updatedAuth, token);

@@ -83,15 +83,11 @@ export default function ClienteVendasScreen() {
         params.codcli as string,
         token
       );
-
-      console.log("allNotas", allNotas);
       
       // Filter notes for the current client
       const clienteNotas = allNotas.filter((nota: NotasApp) => 
         nota.cliente && nota.codcli === parseInt(params.codcli as string)
       );
-
-      console.log("clienteNotas", clienteNotas);
       
       setNotas(clienteNotas);
     } catch (error) {

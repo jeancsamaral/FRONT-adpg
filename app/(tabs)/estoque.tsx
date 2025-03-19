@@ -7,6 +7,7 @@ import { ThemedView } from '../components/ThemedView';
 import { useRouter } from 'expo-router';
 import ApiCaller from '../../backEnd/apiCaller';
 import { useAuth } from '../context/AuthContext';
+import { useAuthCheck } from "../hooks/useAuthCheck";
 
 // Initialize ApiCaller
 const apiCaller = new ApiCaller();
@@ -37,7 +38,7 @@ interface Filters {
 
 export default function EstoqueScreen() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, loading: authLoading } = useAuthCheck();
   const [products, setProducts] = useState<Product[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -71,7 +72,6 @@ export default function EstoqueScreen() {
   }, [debouncedFilters]);
 
   const fetchProducts = async (pageNumber: number, filterParams?: Filters) => {
-    console.log('fetchProducts', pageNumber, filterParams);
     if (!token) {
       Alert.alert('Erro', 'Token de autenticação não encontrado.');
       return;
@@ -108,7 +108,6 @@ export default function EstoqueScreen() {
           }
         }
       } else {
-        console.error("Expected an array but got:", response.products);
         setHasMore(false);
       }
     } catch (error) {

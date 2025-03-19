@@ -17,7 +17,7 @@ import { ThemedView } from "../components/ThemedView";
 import { useRouter } from "expo-router";
 import { ClientesApp } from "../../backEnd/interfaces";
 import ApiCaller from "../../backEnd/apiCaller";
-import { useAuth } from "../context/AuthContext";
+import { useAuthCheck } from "../hooks/useAuthCheck";
 
 const apiCaller = new ApiCaller();
 
@@ -97,7 +97,7 @@ const clientData: ClientesApp[] = [
 
 export default function ClientesScreen() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, loading: authLoading } = useAuthCheck();
   const [clients, setClients] = useState<ClientesApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
@@ -126,26 +126,22 @@ export default function ClientesScreen() {
 
   // Effect to fetch data when debounced search changes
   useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchClients();
-  }, [debouncedSearchText]);
+    if (token) {
+      setPage(1);
+      setHasMore(true);
+      fetchClients();
+    }
+  }, [debouncedSearchText, token]);
 
   // Effect to fetch data when page changes
   useEffect(() => {
-    if (page > 1) {
-      // Only fetch if it's not the initial page
+    if (page > 1 && token) {
       fetchClients();
     }
-  }, [page]);
+  }, [page, token]);
 
   const fetchClients = async () => {
     if (!token) {
-      Alert.alert(
-        "Erro",
-        "Você precisa estar logado para acessar esta página."
-      );
-      router.replace("/login");
       return;
     }
 
@@ -155,7 +151,7 @@ export default function ClientesScreen() {
         page,
         limit,
         token,
-        debouncedSearchText // Add search text to filter
+        debouncedSearchText
       );
 
       if (response.length === 0) {
@@ -244,7 +240,7 @@ export default function ClientesScreen() {
     });
   };
 
-  if (loading && clients.length === 0) {
+  if (authLoading && clients.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient
@@ -253,11 +249,6 @@ export default function ClientesScreen() {
         >
           <View style={styles.header}>
             <View style={styles.headerContent}>
-              <Image
-                source={require("../../assets/images/LogoADPG.png")}
-                style={styles.logo}
-                resizeMode="contain"
-              />
               <ThemedText style={styles.title}>Clientes</ThemedText>
             </View>
             <TouchableOpacity

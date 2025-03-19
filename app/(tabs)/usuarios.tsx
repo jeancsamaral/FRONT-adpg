@@ -9,6 +9,7 @@ import { UsuariosApp, UsuarioAuth } from '../../backEnd/interfaces';
 import { useRouter } from 'expo-router';  
 import { useAuth } from '../context/AuthContext';
 import ApiCaller from '../../backEnd/apiCaller';
+import { useAuthCheck } from "../hooks/useAuthCheck";
 
 const apiCaller = new ApiCaller();
 
@@ -60,7 +61,8 @@ interface DisplayUser extends Omit<UsuariosApp & UsuarioAuth, 'login'> {
 }
 
 export default function UsuariosScreen() {
-  const { token, user } = useAuth();
+  const router = useRouter();
+  const { token, loading: authLoading } = useAuthCheck();
   const [users, setUsers] = useState<DisplayUser[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<DisplayUser | undefined>(undefined);
@@ -78,7 +80,7 @@ export default function UsuariosScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const router = useRouter();
+  const { user } = useAuth();
 
   // Debounced search effect
   useEffect(() => {
@@ -155,18 +157,13 @@ export default function UsuariosScreen() {
   };
 
   const handleCreateUser = async (userData: Partial<UsuarioAuth>) => {
-    // Aqui você implementaria a lógica para criar um usuário
-    console.log('Criar usuário:', userData);
     setIsEditing(false);
   };
 
   const handleUpdateUser = async (formData:{nome:string,senha:string,login:string}) => {
     const userData = selectedUser;
     if (!token || !selectedUser || !userData) return;
-    console.log("selectedUser",userData);
     try {
-      console.log("SFI",formData)
-        // Use the updateUserAuth method to update the user
         await apiCaller.userMethods.updateUserAuth(selectedUser.codusr.toString(), {
           codusr: userData.codusr,
           isAdmin: userData.isAdmin,
@@ -176,9 +173,8 @@ export default function UsuariosScreen() {
           profileAccess: [],
         }, token);
         Alert.alert('Sucesso', 'Usuário atualizado com sucesso!');
-        fetchUsers(); // Refresh the user list
+        fetchUsers();
     } catch (error) {
-        console.error('Error updating user:', error);
         Alert.alert('Erro', 'Não foi possível atualizar o usuário.');
     } finally {
         setIsEditing(false);
@@ -187,8 +183,31 @@ export default function UsuariosScreen() {
   };
 
   const handleDeleteUser = async (userId: number) => {
-    // Implement the logic to delete a user
-    console.log('Deletar usuário:', userId);
+    Alert.alert(
+      "Confirmar Exclusão",
+      "Tem certeza que deseja excluir este usuário?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (!token) return;
+              await apiCaller.userMethods.deleteUserLogin(userId, token);
+              // Refresh the users list after deletion
+              fetchUsers();
+            } catch (error) {
+              console.error('Error deleting user:', error);
+              Alert.alert('Erro', 'Não foi possível excluir o usuário.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleDeleteClient = (clientToDelete: any) => {
@@ -331,8 +350,11 @@ export default function UsuariosScreen() {
                       }}>
                         <Ionicons name="create-outline" size={20} color="#075eec" />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDeleteUser(item.id)}>
-                        <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                      <TouchableOpacity 
+                        onPress={() => handleDeleteUser(item.id)}
+                        style={styles.deleteButton}
+                      >
+                        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
                       </TouchableOpacity>
                     </ThemedView>
                   </ThemedView>
@@ -572,5 +594,8 @@ const styles = StyleSheet.create({
   loadingMore: {
     padding: 16,
     alignItems: 'center',
+  },
+  deleteButton: {
+    padding: 8,
   },
 });

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from './context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
     const [form, setForm] = useState({
@@ -18,6 +19,7 @@ export default function LoginScreen() {
         password: '',
     });
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const { login, loading } = useAuth();
 
     const handleLogin = async () => {
@@ -33,7 +35,6 @@ export default function LoginScreen() {
                 setError('');
                 router.replace('/(tabs)');
             } else {
-                console.log("Login failed");
                 setError('Login ou senha inválidos');
             }
         } catch (error) {
@@ -46,10 +47,10 @@ export default function LoginScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Image
-                    source={require('../assets/images/pc.png')}
-                    style={styles.backgroundImage}
+                    source={require('../assets/images/LogoADPG.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
                 />
-                <Text style={styles.greeting}>Adpg</Text>
             </View>
 
             <View style={styles.form}>
@@ -63,17 +64,29 @@ export default function LoginScreen() {
                     onChangeText={login => setForm({ ...form, login })}
                     editable={!loading}
                 />
-                <TextInput
-                    style={styles.input}
-                    autoCorrect={false}
-                    clearButtonMode="while-editing"
-                    placeholder="********"
-                    placeholderTextColor="#6b7280"
-                    secureTextEntry={true}
-                    value={form.password}
-                    onChangeText={password => setForm({ ...form, password })}
-                    editable={!loading}
-                />
+                <View style={styles.passwordContainer}>
+                    <TextInput
+                        style={[styles.input, styles.passwordInput]}
+                        autoCorrect={false}
+                        clearButtonMode="while-editing"
+                        placeholder="********"
+                        placeholderTextColor="#6b7280"
+                        secureTextEntry={!showPassword}
+                        value={form.password}
+                        onChangeText={password => setForm({ ...form, password })}
+                        editable={!loading}
+                    />
+                    <TouchableOpacity 
+                        style={styles.eyeIcon}
+                        onPress={() => setShowPassword(!showPassword)}
+                    >
+                        <Ionicons 
+                            name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                            size={24} 
+                            color="#666" 
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -104,36 +117,15 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
-    backButton: {
-        position: 'absolute',
-        top: 40,
-        left: 20,
-        zIndex: 1,
-    },
-    backButtonText: {
-        color: '#fff',
-        fontSize: 24,
-    },
     header: {
         height: 300,
-        position: 'relative',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
     },
-    backgroundImage: {
-        width: '100%',
-        height: '100%',
-        position: 'absolute',
-    },
-    greeting: {
-        color: '#229dc9',
-        textShadowColor: 'white',
-        textShadowOffset: {width: 1, height: 2},
-        textShadowRadius: 20,
-        fontSize: 32,
-        fontWeight: 'bold',
-        position: 'absolute',
-        textAlign: 'left',
-        bottom: 20,
-        left: 20,
+    logo: {
+        width: 200,
+        height: 200,
     },
     form: {
         flex: 1,
@@ -167,38 +159,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
     },
-    orText: {
-        color: '#666',
-        textAlign: 'center',
-        marginVertical: 10,
-    },
-    socialButton: {
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        padding: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    socialIcon: {
-        width: 24,
-        height: 24,
-    },
-    socialButtonText: {
-        color: '#000',
-        fontSize: 16,
-        fontWeight: '500',
-    },
     footer: {
         marginTop: 20,
         gap: 10,
-    },
-    footerText: {
-        color: '#000',
-        textAlign: 'center',
-    },
-    footerLink: {
-        color: '#229dc9',
     },
     forgotPassword: {
         color: '#229dc9',
@@ -206,5 +169,17 @@ const styles = StyleSheet.create({
     },
     disabledButton: {
         backgroundColor: '#ccc',
+    },
+    passwordContainer: {
+        position: 'relative',
+    },
+    passwordInput: {
+        paddingRight: 50,
+    },
+    eyeIcon: {
+        position: 'absolute',
+        right: 15,
+        top: '50%',
+        transform: [{ translateY: -12 }],
     },
 });
