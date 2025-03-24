@@ -102,11 +102,11 @@ export default function LoginScreen() {
                     )}
                 </TouchableOpacity>
 
-                <View style={styles.footer}>
+                {/* <View style={styles.footer}>
                     <TouchableOpacity>
                         <Text style={styles.forgotPassword}>Esqueceu sua senha?</Text>
                     </TouchableOpacity>
-                </View>
+                </View> */}
             </View>
         </SafeAreaView>
     );
