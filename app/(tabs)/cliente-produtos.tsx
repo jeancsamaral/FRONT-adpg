@@ -5,18 +5,20 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ClientesApp_Itens } from '../../backEnd/interfaces';
+import { ClientesApp_Itens, ProdutosApp_PrecosRegiao } from '../../backEnd/interfaces';
 import ApiCaller from '../../backEnd/apiCaller';
 import { useAuth } from '../context/AuthContext';
 
 const apiCaller = new ApiCaller();
+
+type ClientesApp_Itens_IPI = ClientesApp_Itens & { IPI: number };
 
 export default function ClienteProdutosScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [clienteItens, setClienteItens] = useState<ClientesApp_Itens[]>([]);
+  const [clienteItens, setClienteItens] = useState<ClientesApp_Itens_IPI[]>([]);
 
   useEffect(() => {
     fetchClienteProdutos();
@@ -37,8 +39,17 @@ export default function ClienteProdutosScreen() {
         token
       );
 
-      console.log(itens);
-      
+      let regionInfo = await apiCaller.regionalPricesMethods.getAllRegionalPrices(null,null,token);
+      regionInfo = regionInfo.regionalPrices;
+      console.log({regionInfo});
+
+      itens.forEach((item: ClientesApp_Itens_IPI) => {
+        const regionInfoItem = regionInfo.find((region: ProdutosApp_PrecosRegiao) => region.codprod == item.codprod);
+        if (regionInfoItem) {
+          item.IPI = regionInfoItem.ipi;
+        }
+      });
+
       setClienteItens(itens);
     } catch (error) {
       console.error('Error fetching client products:', error);
@@ -112,6 +123,9 @@ export default function ClienteProdutosScreen() {
                   <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
                   <ThemedText style={styles.preco}>
                     {formatCurrency(item.preco, item.moeda)}
+                  </ThemedText>
+                  <ThemedText style={styles.preco}>
+                    {`${item.IPI*100} %`}
                   </ThemedText>
                 </ThemedView>
               ))}

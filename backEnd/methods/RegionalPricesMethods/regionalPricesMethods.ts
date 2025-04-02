@@ -14,8 +14,8 @@ export async function createRegionalPrice(
 }
 
 export async function getAllRegionalPrices(
-  page: number,
-  limit: number,
+  page: number | null,
+  limit: number | null,
   token: string
 ) {
   if (environment.appState === "OFFLINE") {
