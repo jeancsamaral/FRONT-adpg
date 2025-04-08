@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput, ActivityIndicator, Linking, Alert, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
@@ -7,6 +7,9 @@ import { ThemedView } from '../components/ThemedView';
 import { getAllFiles } from '../../backEnd/methods/ArquivosMethods';
 import { Arquivos_Generico } from '../../backEnd/interfaces';
 import { useAuth } from '../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 // Adicione essa interface para tipar os filtros
 interface Filters {
   nome: boolean;
@@ -210,12 +213,82 @@ export default function ArquivosScreen() {
                 <TouchableOpacity 
                   key={item.id} 
                   style={styles.tableRow}
-                  onPress={() => {
-                    // Ensure we're using the complete URL
-                    const fullUrl = item.linkftp.startsWith('http') 
-                      ? item.linkftp 
-                      : `https://${item.linkftp}`;
-                    window.open(fullUrl, '_blank');
+                  onPress={async () => {
+                    try {
+                      // Show loading indicator
+                      Alert.alert(
+                        "Baixando arquivo",
+                        "O arquivo está sendo baixado. Por favor, aguarde...",
+                        [{ text: "OK" }]
+                      );
+                      
+                      // Get the file name from the URL
+                      const fileName = item.arquivo || item.linkftp.split('/').pop();
+                      
+                      // Create a temporary file path
+                      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+                      
+                      // Download the file
+                      const downloadResult = await FileSystem.downloadAsync(
+                        item.linkftp,
+                        fileUri
+                      );
+                      
+                      if (downloadResult.status === 200) {
+                        // Check if sharing is available
+                        const isAvailable = await Sharing.isAvailableAsync();
+                        
+                        if (isAvailable) {
+                          // Share the file (this will allow the user to save it)
+                          await Sharing.shareAsync(fileUri, {
+                            mimeType: 'application/pdf',
+                            dialogTitle: 'Salvar arquivo',
+                            UTI: 'public.pdf'
+                          });
+                          
+                          // Show success message
+                          Alert.alert(
+                            "Download concluído",
+                            "O arquivo foi baixado com sucesso.",
+                            [{ text: "OK" }]
+                          );
+                        } else {
+                          // If sharing is not available, open the file in browser
+                          await Linking.openURL(item.linkftp);
+                          
+                          Alert.alert(
+                            "Abrindo arquivo",
+                            "O arquivo será aberto no navegador.",
+                            [{ text: "OK" }]
+                          );
+                        }
+                      } else {
+                        throw new Error('Download failed');
+                      }
+                    } catch (error) {
+                      console.error('Error downloading file:', error);
+                      Alert.alert(
+                        "Erro ao baixar arquivo",
+                        "Ocorreu um erro ao tentar baixar o arquivo. Tentando abrir no navegador...",
+                        [
+                          { 
+                            text: "OK",
+                            onPress: async () => {
+                              try {
+                                await Linking.openURL(item.linkftp);
+                              } catch (e) {
+                                console.error('Error opening URL:', e);
+                                Alert.alert(
+                                  "Erro",
+                                  "Não foi possível abrir o arquivo.",
+                                  [{ text: "OK" }]
+                                );
+                              }
+                            }
+                          }
+                        ]
+                      );
+                    }
                   }}
                 >
                   <View style={styles.rowHeader}>
