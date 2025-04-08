@@ -223,3 +223,28 @@ export interface UsuarioAuth {
     isAdmin: boolean;
     profileAccess: string[];
 } 
+
+export interface Arquivos_FISPQ {
+    id: number;
+    type : "FISPQ";
+    arquivo: string;
+    linkftp: string;
+    dtaltera: Date;
+}
+
+export interface Arquivos_TDS {
+    id: number;
+    type : "TDS";
+    arquivo: string;
+    linkftp: string;
+    dtaltera: Date;
+}
+
+export interface Arquivos_Generico {
+    id: number;
+    type : "TDS" | "FISPQ";
+    arquivo: string;
+    linkftp: string;
+    dtaltera: Date;
+}
+

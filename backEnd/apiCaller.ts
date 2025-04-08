@@ -9,6 +9,7 @@ import { Implemented_RecebidosApp_Methods } from './methods/RecebidosAppMethods'
 import { Implemented_User_Methods } from './methods/UserMethods';
 import { Implemented_Auth_Methods } from './methods/AuthMethods';
 import { Implemented_Notas_Methods } from './methods/NotasMethods/index';
+import { getAllFiles } from './methods/ArquivosMethods';
 
 class ApiCaller {
     clientMethods = Implemented_Client_Methods;
@@ -22,25 +23,7 @@ class ApiCaller {
     userMethods = Implemented_User_Methods;
     authMethods = Implemented_Auth_Methods;
     notasMethods = Implemented_Notas_Methods;
-
-    async deleteUserLogin(userId: number, token: string): Promise<void> {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/usuarios/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete user');
-            }
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            throw error;
-        }
-    }
+    arquivosMethods = { getAllFiles };
 }
 
 export default ApiCaller; 

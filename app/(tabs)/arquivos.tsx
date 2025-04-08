@@ -1,44 +1,12 @@
-import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
-
-const fisqpData = [
-  {
-    id: 1,
-    nome: 'FISQP - IRGASURF SR 100.pdf',
-    tipo: 'PDF',
-    tamanho: '2.4 MB',
-    data: '15/01/2024',
-  },
-  {
-    id: 2,
-    nome: 'FISQP - IRGASURF HL 560.pdf',
-    tipo: 'PDF',
-    tamanho: '1.8 MB',
-    data: '10/01/2024',
-  },
-];
-
-const tdsData = [
-  {
-    id: 1,
-    nome: 'TDS - IRGASURF SR 100_EN.pdf',
-    tipo: 'PDF',
-    tamanho: '1.5 MB',
-    data: '15/01/2024',
-  },
-  {
-    id: 2,
-    nome: 'TDS - IRGASURF HL 560_EN.pdf',
-    tipo: 'PDF',
-    tamanho: '1.2 MB',
-    data: '10/01/2024',
-  },
-];
-
+import { getAllFiles } from '../../backEnd/methods/ArquivosMethods';
+import { Arquivos_Generico } from '../../backEnd/interfaces';
+import { useAuth } from '../context/AuthContext';
 // Adicione essa interface para tipar os filtros
 interface Filters {
   nome: boolean;
@@ -48,7 +16,7 @@ interface Filters {
 }
 
 export default function ArquivosScreen() {
-  const [activeTab, setActiveTab] = useState<'FISQP' | 'TDS'>('FISQP');
+  const [activeTab, setActiveTab] = useState<'FISPQ' | 'TDS'>('FISPQ');
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
@@ -57,13 +25,58 @@ export default function ArquivosScreen() {
     tamanho: true,
     data: true,
   });
+  const { token } = useAuth();
+  // New states for API integration
+  const [files, setFiles] = useState<Arquivos_Generico[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalFiles, setTotalFiles] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Function to fetch files from the API
+  const fetchFiles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getAllFiles(page, limit, token || '');
+      console.log(response);
+      setFiles(response.data);
+      setTotalFiles(response.total);
+    } catch (err) {
+      console.error('Error fetching files:', err);
+      setError('Erro ao carregar os arquivos. Tente novamente mais tarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch files when component mounts or when page/limit changes
+  useEffect(() => {
+    fetchFiles();
+  }, [page, limit]);
+
+  // Function to handle tab change
+  const handleTabChange = (tab: 'FISPQ' | 'TDS') => {
+    setActiveTab(tab);
+    setPage(1); // Reset to first page when changing tabs
+  };
+
+  // Function to handle load more
+  const handleLoadMore = () => {
+    if (files.length < totalFiles) {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
 
   // Função para filtrar os documentos baseado na busca e filtros
   const filteredData = React.useMemo(() => {
-    const currentData = activeTab === 'FISQP' ? fisqpData : tdsData;
-    if (!searchText) return currentData;
+    // First filter by file type based on active tab
+    const typeFilteredFiles = files.filter(file => file.type === activeTab);
+    
+    if (!searchText) return typeFilteredFiles;
 
-    return currentData.filter(doc => {
+    return typeFilteredFiles.filter(doc => {
       const searchLower = searchText.toLowerCase();
       const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
 
@@ -72,7 +85,7 @@ export default function ArquivosScreen() {
         return value && value.toString().toLowerCase().includes(searchLower);
       });
     });
-  }, [activeTab, searchText, filters]);
+  }, [files, searchText, filters, activeTab]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -93,16 +106,16 @@ export default function ArquivosScreen() {
 
       <View style={styles.tabContainer}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'FISQP' && styles.activeTab]}
-          onPress={() => setActiveTab('FISQP')}
+          style={[styles.tab, activeTab === 'FISPQ' && styles.activeTab]}
+          onPress={() => handleTabChange('FISPQ')}
         >
-          <ThemedText style={[styles.tabText, activeTab === 'FISQP' && styles.activeTabText]}>
-            FISQP
+          <ThemedText style={[styles.tabText, activeTab === 'FISPQ' && styles.activeTabText]}>
+            FISPQ
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'TDS' && styles.activeTab]}
-          onPress={() => setActiveTab('TDS')}
+          onPress={() => handleTabChange('TDS')}
         >
           <ThemedText style={[styles.tabText, activeTab === 'TDS' && styles.activeTabText]}>
             TDS
@@ -110,11 +123,23 @@ export default function ArquivosScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView 
+        style={styles.scrollContainer}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const paddingToBottom = 20;
+          const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+          
+          if (isCloseToBottom && !loading && files?.length < totalFiles) {
+            handleLoadMore();
+          }
+        }}
+        scrollEventThrottle={400}
+      >
         <ThemedView style={styles.contentContainer}>
           {/* Barra de busca */}
           <View style={styles.searchContainer}>
-            <TextInput
+            {/* <TextInput
               style={styles.searchInput}
               placeholder="Buscar documentos..."
               value={searchText}
@@ -129,7 +154,7 @@ export default function ArquivosScreen() {
                 size={24} 
                 color="#229dc9" 
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
           {/* Filtros */}
@@ -158,47 +183,91 @@ export default function ArquivosScreen() {
             </View>
           )}
 
+          {/* Error message */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <ThemedText style={styles.errorText}>{error}</ThemedText>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={fetchFiles}
+              >
+                <ThemedText style={styles.retryButtonText}>Tentar Novamente</ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Loading indicator */}
+          {loading && files?.length === 0 && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#229dc9" />
+              <ThemedText style={styles.loadingText}>Carregando arquivos...</ThemedText>
+            </View>
+          )}
+
           <ThemedView style={styles.table}>
-            {filteredData.map((item) => (
-              <ThemedView key={item.id} style={styles.tableRow}>
-                <View style={styles.rowHeader}>
-                  <MaterialCommunityIcons 
-                    name="file-pdf-box"
-                    size={24} 
-                    color="#229dc9" 
-                  />
-                  <ThemedText style={styles.fileName}>{item.nome}</ThemedText>
-                </View>
+            {filteredData?.length > 0 ? (
+              filteredData.map((item) => (
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={styles.tableRow}
+                  onPress={() => {
+                    // Ensure we're using the complete URL
+                    const fullUrl = item.linkftp.startsWith('http') 
+                      ? item.linkftp 
+                      : `https://${item.linkftp}`;
+                    window.open(fullUrl, '_blank');
+                  }}
+                >
+                  <View style={styles.rowHeader}>
+                    <MaterialCommunityIcons 
+                      name="file-pdf-box"
+                      size={24} 
+                      color="#229dc9" 
+                    />
+                    <ThemedText style={styles.fileName}>{item.arquivo}</ThemedText>
+                  </View>
 
-                <View style={styles.rowContent}>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Tipo</ThemedText>
-                      <ThemedText style={styles.value}>{item.tipo}</ThemedText>
+                  <View style={styles.rowContent}>
+                    <View style={styles.column}>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Tipo</ThemedText>
+                        <ThemedText style={styles.value}>{item.type}</ThemedText>
+                      </View>
+                    </View>
+                    <View style={styles.column}>
+                      <View style={styles.cell}>
+                        <ThemedText style={styles.label}>Data</ThemedText>
+                        <ThemedText style={styles.value}>
+                          {new Date(item.dtaltera).toLocaleDateString('pt-BR')}
+                        </ThemedText>
+                      </View>
                     </View>
                   </View>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Tamanho</ThemedText>
-                      <ThemedText style={styles.value}>{item.tamanho}</ThemedText>
-                    </View>
-                  </View>
-                  <View style={styles.column}>
-                    <View style={styles.cell}>
-                      <ThemedText style={styles.label}>Data</ThemedText>
-                      <ThemedText style={styles.value}>{item.data}</ThemedText>
-                    </View>
-                  </View>
-                </View>
 
-                <View style={styles.actionIcons}>
-                  <TouchableOpacity>
+                  <View style={styles.actionIcons}>
                     <MaterialCommunityIcons name="download" size={20} color="#229dc9" />
-                  </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              !loading && (
+                <View style={styles.emptyContainer}>
+                  <MaterialCommunityIcons name="file-search" size={48} color="#ccc" />
+                  <ThemedText style={styles.emptyText}>
+                    Nenhum documento encontrado
+                  </ThemedText>
                 </View>
-              </ThemedView>
-            ))}
+              )
+            )}
           </ThemedView>
+
+          {/* Loading more indicator */}
+          {loading && files?.length > 0 && (
+            <View style={styles.loadingMoreContainer}>
+              <ActivityIndicator size="small" color="#229dc9" />
+              <ThemedText style={styles.loadingMoreText}>Carregando mais...</ThemedText>
+            </View>
+          )}
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
@@ -383,5 +452,58 @@ const styles = StyleSheet.create({
   },
   filterOptionTextActive: {
     color: '#fff',
+  },
+  // New styles for API integration
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    gap: 10,
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    backgroundColor: '#ffebee',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#d32f2f',
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: '#d32f2f',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 4,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
 }); 
