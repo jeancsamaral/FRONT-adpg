@@ -61,7 +61,7 @@ export default function ClienteProdutosScreen() {
 
   // Format currency
   const formatCurrency = (value: number, currency: string) => {
-    return `${currency} ${value.toFixed(2)}`;
+    return `${value.toFixed(2)} ${currency}`;
   };
 
   if (loading) {
@@ -115,6 +115,7 @@ export default function ClienteProdutosScreen() {
                 <ThemedText style={styles.headerCodigo}>Código</ThemedText>
                 <ThemedText style={styles.headerDescricao}>Descrição</ThemedText>
                 <ThemedText style={styles.headerPreco}>Preço</ThemedText>
+                <ThemedText style={styles.headerPreco}>IPI</ThemedText>
               </View>
               
               {clienteItens.map((item) => (
