@@ -126,19 +126,7 @@ export default function ArquivosScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.scrollContainer}
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const paddingToBottom = 20;
-          const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-          
-          if (isCloseToBottom && !loading && files?.length < totalFiles) {
-            handleLoadMore();
-          }
-        }}
-        scrollEventThrottle={400}
-      >
+      <ScrollView>
         <ThemedView style={styles.contentContainer}>
           {/* Barra de busca */}
           <View style={styles.searchContainer}>
@@ -210,77 +198,82 @@ export default function ArquivosScreen() {
           <ThemedView style={styles.table}>
             {filteredData?.length > 0 ? (
               filteredData.map((item) => (
-                <TouchableOpacity 
-                  key={item.id} 
+                <TouchableOpacity
+                  key={item.id}
                   style={styles.tableRow}
                   onPress={async () => {
                     try {
-                      // Show loading indicator
-                      Alert.alert(
-                        "Baixando arquivo",
-                        "O arquivo está sendo baixado. Por favor, aguarde...",
-                        [{ text: "OK" }]
-                      );
-                      
+                      // Get the full URL with protocol
+                      const fullUrl = `https://${item.linkftp}`;
+
                       // Get the file name from the URL
-                      const fileName = item.arquivo || item.linkftp.split('/').pop();
-                      
+                      const fileName = item.arquivo || fullUrl.split('/').pop() || 'downloaded_file.pdf';
+
                       // Create a temporary file path
                       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-                      
-                      // Download the file
+
+                      // Download the file using the full URL
                       const downloadResult = await FileSystem.downloadAsync(
-                        item.linkftp,
+                        fullUrl,
                         fileUri
                       );
-                      
+
                       if (downloadResult.status === 200) {
                         // Check if sharing is available
                         const isAvailable = await Sharing.isAvailableAsync();
-                        
+
                         if (isAvailable) {
-                          // Share the file (this will allow the user to save it)
-                          await Sharing.shareAsync(fileUri, {
-                            mimeType: 'application/pdf',
-                            dialogTitle: 'Salvar arquivo',
-                            UTI: 'public.pdf'
-                          });
-                          
-                          // Show success message
+                          // Show success message before sharing
                           Alert.alert(
                             "Download concluído",
-                            "O arquivo foi baixado com sucesso.",
+                            "O arquivo foi baixado. Escolha como salvá-lo.",
                             [{ text: "OK" }]
                           );
+
+                          // Share the file
+                          await Sharing.shareAsync(fileUri, {
+                            mimeType: 'application/pdf', // Consider making this dynamic
+                            dialogTitle: 'Salvar arquivo',
+                            UTI: 'public.pdf' // Consider making dynamic or removing for cross-platform
+                          });
+
                         } else {
                           // If sharing is not available, open the file in browser
-                          await Linking.openURL(item.linkftp);
-                          
                           Alert.alert(
-                            "Abrindo arquivo",
-                            "O arquivo será aberto no navegador.",
+                            "Download concluído",
+                            "Compartilhamento não disponível. Abrindo arquivo no navegador...",
                             [{ text: "OK" }]
                           );
+                          await Linking.openURL(fullUrl); // Use full URL
                         }
                       } else {
-                        throw new Error('Download failed');
+                         // Specific alert for download failure status
+                         Alert.alert(
+                          "Erro no Download",
+                          `Falha ao baixar o arquivo. Status: ${downloadResult.status}`,
+                          [{ text: "OK" }]
+                        );
+                        throw new Error(`Download failed with status ${downloadResult.status}`);
                       }
                     } catch (error) {
-                      console.error('Error downloading file:', error);
+                      console.error('Error handling file:', error);
+                      // Construct URL again for the error handler
+                      const fullUrl = `https://${item.linkftp}`;
                       Alert.alert(
-                        "Erro ao baixar arquivo",
-                        "Ocorreu um erro ao tentar baixar o arquivo. Tentando abrir no navegador...",
+                        "Erro",
+                        "Ocorreu um erro ao processar o arquivo. Tente abrir no navegador?",
                         [
-                          { 
-                            text: "OK",
+                          { text: "Cancelar", style: "cancel" },
+                          {
+                            text: "Abrir no Navegador",
                             onPress: async () => {
                               try {
-                                await Linking.openURL(item.linkftp);
+                                await Linking.openURL(fullUrl); // Use full URL
                               } catch (e) {
                                 console.error('Error opening URL:', e);
                                 Alert.alert(
                                   "Erro",
-                                  "Não foi possível abrir o arquivo.",
+                                  "Não foi possível abrir o link.",
                                   [{ text: "OK" }]
                                 );
                               }
@@ -292,12 +285,12 @@ export default function ArquivosScreen() {
                   }}
                 >
                   <View style={styles.rowHeader}>
-                    <MaterialCommunityIcons 
-                      name="file-pdf-box"
-                      size={24} 
-                      color="#229dc9" 
+                    <MaterialCommunityIcons
+                      name="file-pdf-box" // Consider making icon dynamic based on file type
+                      size={24}
+                      color="#229dc9"
                     />
-                    <ThemedText style={styles.fileName}>{item.arquivo}</ThemedText>
+                    <ThemedText style={styles.fileName}>{item.arquivo || 'Nome Indisponível'}</ThemedText>
                   </View>
 
                   <View style={styles.rowContent}>
@@ -334,12 +327,24 @@ export default function ArquivosScreen() {
             )}
           </ThemedView>
 
-          {/* Loading more indicator */}
-          {loading && files?.length > 0 && (
-            <View style={styles.loadingMoreContainer}>
-              <ActivityIndicator size="small" color="#229dc9" />
-              <ThemedText style={styles.loadingMoreText}>Carregando mais...</ThemedText>
+          {/* "Load More" Button Area */}
+          {!loading && files.length < totalFiles && files.length > 0 && (
+            <View style={styles.loadMoreContainer}>
+              <TouchableOpacity
+                style={styles.loadMoreButton}
+                onPress={handleLoadMore}
+                disabled={loading} // Disable button while loading new page
+              >
+                <ThemedText style={styles.loadMoreButtonText}>Carregar mais</ThemedText>
+              </TouchableOpacity>
             </View>
+          )}
+
+          {/* Loading indicator shown when loading the next page triggered by the button */}
+          {loading && page > 1 && (
+             <View style={styles.loadMoreContainer}> // Reuse container style
+                <ActivityIndicator size="small" color="#229dc9" />
+             </View>
           )}
         </ThemedView>
       </ScrollView>
@@ -537,16 +542,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  loadingMoreContainer: {
-    flexDirection: 'row',
+  // Add styles for the new button (copied from estoque.tsx)
+  loadMoreContainer: {
+    marginTop: 24,
+    marginBottom: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-    gap: 10,
   },
-  loadingMoreText: {
-    fontSize: 14,
-    color: '#666',
+  loadMoreButton: {
+    backgroundColor: '#229dc9',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 150,
+    height: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  loadMoreButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   errorContainer: {
     backgroundColor: '#ffebee',

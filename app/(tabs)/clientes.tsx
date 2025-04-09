@@ -379,16 +379,6 @@ export default function ClientesScreen() {
 
       <ScrollView
         style={styles.scrollContainer}
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isEndReached =
-            layoutMeasurement.height + contentOffset.y >=
-            contentSize.height - 20;
-          if (isEndReached) {
-            loadMore();
-          }
-        }}
-        scrollEventThrottle={400}
       >
         <ThemedView style={styles.contentContainer}>
           {filteredClients.length > 0 ? (
@@ -514,26 +504,27 @@ export default function ClientesScreen() {
               </TouchableOpacity>
             ))
           ) : (
-            <ThemedView style={styles.emptyState}>
-              <MaterialCommunityIcons
-                name="account-search"
-                size={48}
-                color="#ccc"
-              />
-              <ThemedText style={styles.emptyStateText}>
-                Nenhum cliente encontrado
-              </ThemedText>
-            </ThemedView>
-          )}
-
-          {loading && clients.length > 0 && (
-            <View style={styles.loadingMore}>
-              <ActivityIndicator size="small" color="#229dc9" />
-              <ThemedText style={styles.loadingMoreText}>
-                Carregando mais clientes...
-              </ThemedText>
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons name="account-search-outline" size={48} color="#ccc" />
+              <ThemedText style={styles.emptyStateText}>Nenhum cliente encontrado.</ThemedText>
             </View>
           )}
+
+          {hasMore && filteredClients.length > 0 && (
+             <View style={styles.loadMoreContainer}>
+               <TouchableOpacity
+                 style={styles.loadMoreButton}
+                 onPress={loadMore}
+                 disabled={loading}
+               >
+                 {loading && page > 1 ? (
+                   <ActivityIndicator size="small" color="#fff" />
+                 ) : (
+                   <ThemedText style={styles.loadMoreButtonText}>Carregar mais</ThemedText>
+                 )}
+               </TouchableOpacity>
+             </View>
+           )}
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
@@ -711,15 +702,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  loadingMore: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 15,
+  loadMoreContainer: {
+    marginTop: 24,
+    marginBottom: 20,
+    alignItems: 'center',
   },
-  loadingMoreText: {
-    marginLeft: 10,
-    color: "#666",
+  loadMoreButton: {
+    backgroundColor: '#229dc9',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 150,
+    height: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  loadMoreButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   logo: {
     width: 32,

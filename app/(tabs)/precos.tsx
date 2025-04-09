@@ -166,11 +166,6 @@ export default function PrecosScreen() {
         }
     };
 
-    const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
-        const paddingToBottom = 20;
-        return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-    };
-
     if (initialLoading) {
         return <ActivityIndicator size="large" color="#0000ff" />;
     }
@@ -194,12 +189,6 @@ export default function PrecosScreen() {
 
             <ScrollView 
                 style={styles.scrollContainer}
-                onScroll={({ nativeEvent }) => {
-                    if (isCloseToBottom(nativeEvent)) {
-                        handleLoadMore();
-                    }
-                }}
-                scrollEventThrottle={400}
             >
                 <ThemedView style={styles.contentContainer}>
                     <ThemedView style={styles.icmsContainer}>
@@ -341,11 +330,23 @@ export default function PrecosScreen() {
                         ))}
                     </ThemedView>
                     
-                    {isUpdating && page > 1 && (
-                        <View style={styles.loadingMore}>
-                            <ActivityIndicator size="small" color="#229dc9" />
+                    {/* "Load More" Button Area */}
+                    {hasMore && precosData.length > 0 && (
+                        <View style={styles.loadMoreContainer}>
+                        <TouchableOpacity
+                            style={styles.loadMoreButton}
+                            onPress={handleLoadMore}
+                            disabled={isUpdating}
+                        >
+                            {isUpdating && page > 1 ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                            <ThemedText style={styles.loadMoreButtonText}>Carregar mais</ThemedText>
+                            )}
+                        </TouchableOpacity>
                         </View>
                     )}
+
                 </ThemedView>
             </ScrollView>
         </SafeAreaView>
@@ -564,11 +565,33 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginRight: 12,
     },
-    loadingMore: {
-        padding: 16,
-        alignItems: 'center',
-    },
     updatingTable: {
         opacity: 0.7,
+    },
+    // Add Load More Button styles
+    loadMoreContainer: {
+        marginTop: 24,
+        marginBottom: 20,
+        alignItems: 'center',
+    },
+    loadMoreButton: {
+        backgroundColor: '#229dc9',
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minWidth: 150,
+        height: 50,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 3,
+    },
+    loadMoreButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 }); 

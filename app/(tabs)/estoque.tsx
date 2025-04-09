@@ -94,22 +94,36 @@ export default function EstoqueScreen() {
         token
       );
 
+      console.log(`fetchProducts page ${pageNumber} response length:`, response.products?.length);
+
       if (response.groups) {
         setGroups(response.groups);
       }
 
-      if (Array.isArray(response.products)) {
-        if (response.products.length === 0) {
+      const receivedProducts = response.products;
+      const limit = 10; // Define limit for clarity
+
+      if (Array.isArray(receivedProducts)) {
+        if (pageNumber === 1) {
+          setProducts(receivedProducts);
+        } else {
+          setProducts(prev => [...prev, ...receivedProducts]);
+        }
+
+        // Update hasMore based on the number of items received
+        if (receivedProducts.length < limit) {
           setHasMore(false);
         } else {
-          if (pageNumber === 1) {
-            setProducts(response.products);
-          } else {
-            setProducts(prev => [...prev, ...response.products]);
-          }
+          setHasMore(true); // Explicitly set to true if a full page was received
         }
+
       } else {
+        // Handle cases where response.products is not an array (e.g., error or unexpected format)
+        console.warn('Received non-array products:', receivedProducts);
         setHasMore(false);
+        if (pageNumber === 1) {
+          setProducts([]); // Clear products if page 1 response is invalid
+        }
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -133,17 +147,14 @@ export default function EstoqueScreen() {
   };
 
   const handleLoadMore = () => {
+    console.log('handleLoadMore called. isUpdating:', isUpdating, 'hasMore:', hasMore);
     if (!isUpdating && hasMore) {
       setIsUpdating(true);
       const nextPage = page + 1;
       setPage(nextPage);
+      console.log('handleLoadMore: Fetching page', nextPage);
       fetchProducts(nextPage, debouncedFilters);
     }
-  };
-
-  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
-    const paddingToBottom = 20;
-    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
   };
 
   const handleProductPress = (product: any) => {
@@ -185,12 +196,6 @@ export default function EstoqueScreen() {
 
       <ScrollView 
         style={styles.scrollContainer}
-        onScroll={({ nativeEvent }) => {
-          if (isCloseToBottom(nativeEvent)) {
-            handleLoadMore();
-          }
-        }}
-        scrollEventThrottle={400}
       >
         <ThemedView style={styles.contentContainer}>
           {/* Container para os botões */}
@@ -359,9 +364,20 @@ export default function EstoqueScreen() {
             ))}
           </ThemedView>
 
-          {isUpdating && page > 1 && (
-            <View style={styles.loadingMore}>
-              <ActivityIndicator size="small" color="#229dc9" />
+          {/* "Load More" Button Area */}
+          {hasMore && (
+            <View style={styles.loadMoreContainer}>
+              <TouchableOpacity
+                style={styles.loadMoreButton}
+                onPress={handleLoadMore}
+                disabled={isUpdating}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <ThemedText style={styles.loadMoreButtonText}>Carregar mais</ThemedText>
+                )}
+              </TouchableOpacity>
             </View>
           )}
         </ThemedView>
@@ -556,9 +572,24 @@ const styles = StyleSheet.create({
   updatingTable: {
     opacity: 0.7,
   },
-  loadingMore: {
-    padding: 16,
+  loadMoreContainer: {
+    marginTop: 20,
     alignItems: 'center',
+  },
+  loadMoreButton: {
+    backgroundColor: '#229dc9',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 150,
+    height: 50,
+  },
+  loadMoreButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,

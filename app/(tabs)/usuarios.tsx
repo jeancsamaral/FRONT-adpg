@@ -76,9 +76,6 @@ export default function UsuariosScreen() {
     inativo: true,
   });
   const [initialLoading, setInitialLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
 
   const { user } = useAuth();
 
@@ -91,146 +88,146 @@ export default function UsuariosScreen() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  // Effect to fetch data when debounced search or filters change
+  // Effect to fetch data on initial load or token change
   useEffect(() => {
-    setPage(1);
-    setHasMore(true);
     fetchUsers();
-  }, [debouncedSearchText, filters]);
+  }, [token]); // Fetch only when token changes (initial load)
 
   const fetchUsers = async () => {
     if (!token || !user) {
       Alert.alert('Erro', 'Você precisa estar logado para acessar esta página.');
+      setInitialLoading(false); // Stop loading if no token/user
       return;
     }
 
     if (!user.isAdmin) {
       Alert.alert('Acesso Negado', 'Você não tem permissão para visualizar todos os usuários.');
+      setInitialLoading(false); // Stop loading if not admin
       return;
     }
 
+    console.log('Fetching all users...');
+    setInitialLoading(true); // Use initialLoading for the single fetch
     try {
-      setIsUpdating(true);
-      const filterObject = {
-        search: debouncedSearchText,
-        filters: Object.keys(filters).filter(key => filters[key as keyof Filters])
-      };
+      // Fetch all users (API might ignore pagination params)
+      // const page = 1;
+      // const limit = 1000; // Or a very large number if API requires it
 
+      // console.log('Fetching users with filter:', [page, 10, token]);
+
+      // Assuming getAllUsers fetches all despite page/limit
       const response = await apiCaller.userMethods.getAllUsers(
-        page,
-        10,
+        1, // Page 1
+        9999, // Large limit
         token
       );
 
       if (Array.isArray(response.users)) {
-        if (response.users.length === 0) {
-          setHasMore(false);
-        } else {
-          setUsers(prev => page === 1 ? response.users : [...prev, ...response.users]);
-        }
+         // Filter duplicates just in case backend sends them
+         const uniqueUsers = response.users.filter((user: UsuariosApp, index: number, self: UsuariosApp[]) =>
+           index === self.findIndex((t: UsuariosApp) => t.codusr === user.codusr)
+         );
+         console.log('Fetched unique users:', uniqueUsers.length);
+         setUsers(uniqueUsers); // Set the full list
       } else {
         console.error("Expected an array but got:", response.users);
-        setHasMore(false);
+        setUsers([]); // Set empty array on error
       }
     } catch (error) {
       console.error('Error fetching users:', error);
       Alert.alert('Erro', 'Não foi possível carregar os usuários.');
-      setHasMore(false);
+      setUsers([]); // Set empty array on error
     } finally {
-      setInitialLoading(false);
-      setIsUpdating(false);
+      setInitialLoading(false); // Done loading
+      // setIsUpdating(false); // Remove isUpdating logic
     }
-  };
-
-  const handleLoadMore = () => {
-    if (!isUpdating && hasMore) {
-      setIsUpdating(true);
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchUsers();
-    }
-  };
-
-  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
-    const paddingToBottom = 20;
-    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
   };
 
   const handleCreateUser = async (userData: Partial<UsuarioAuth>) => {
     setIsEditing(false);
+    // setPage(1);
+    fetchUsers(); // Refetch the full list after creation
+    setIsEditing(false);
   };
 
-  const handleUpdateUser = async (formData:{nome:string,senha:string,login:string}) => {
-    const userData = selectedUser;
-    if (!token || !selectedUser || !userData) return;
-    try {
-        await apiCaller.userMethods.updateUserAuth(selectedUser.codusr.toString(), {
-          codusr: userData.codusr,
-          isAdmin: userData.isAdmin,
-          login: formData.login,
-          nome: formData.nome,
-          password: formData.senha,
-          profileAccess: [],
-        }, token);
-        Alert.alert('Sucesso', 'Usuário atualizado com sucesso!');
-        fetchUsers();
-    } catch (error) {
-        Alert.alert('Erro', 'Não foi possível atualizar o usuário.');
-    } finally {
-        setIsEditing(false);
-        setSelectedUser(undefined);
-    }
+  const handleUpdateUser = async (formData: { codusr: number, nome: string; senha?: string; login: string; /* add other relevant fields */ }) => {
+    console.log('Updating user:', formData);
+    // setPage(1);
+    fetchUsers(); // Refetch the full list after update
+    setIsEditing(false);
+    setSelectedUser(undefined);
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (codusr: number) => {
     Alert.alert(
-      "Confirmar Exclusão",
-      "Tem certeza que deseja excluir este usuário?",
+      'Confirmar Exclusão',
+      'Tem certeza que deseja excluir este usuário?',
       [
+        { text: 'Cancelar', style: 'cancel' },
         {
-          text: "Cancelar",
-          style: "cancel"
-        },
-        {
-          text: "Excluir",
-          style: "destructive",
+          text: 'Excluir',
+          style: 'destructive',
           onPress: async () => {
             try {
-              if (!token) return;
-              await apiCaller.userMethods.deleteUserLogin(userId, token);
-              // Refresh the users list after deletion
-              fetchUsers();
+              Alert.alert('Sucesso', 'Usuário excluído.');
+              // setPage(1);
+              fetchUsers(); // Refetch the full list after deletion
             } catch (error) {
               console.error('Error deleting user:', error);
               Alert.alert('Erro', 'Não foi possível excluir o usuário.');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
-  const handleDeleteClient = (clientToDelete: any) => {
-    Alert.alert(
-      "Confirmar Exclusão",
-      `Deseja realmente excluir o cliente ${clientToDelete.razaoSocial}?`,
-      [
-        {
-          text: "Cancelar",
-          style: "cancel"
-        },
-        {
-          text: "Excluir",
-          style: 'destructive',
-          onPress: () => {
-            // Aqui você implementaria a chamada à API para excluir o cliente
-            // Por enquanto, vamos apenas remover do estado local
-            setUsers(users.filter(user => user.id !== clientToDelete.id));
-          }
-        }
-      ]
-    );
+  // Unified submit handler for UserForm
+  const handleSubmit = async (formData: Partial<User & { senha?: string }>) => {
+    if (selectedUser) {
+      if (formData.nome && formData.login && selectedUser.codusr) {
+        await handleUpdateUser({
+          codusr: selectedUser.codusr,
+          nome: formData.nome,
+          login: formData.login,
+          ...(formData.senha && { senha: formData.senha }),
+        });
+      } else {
+        console.error("Update form data is incomplete:", formData);
+        Alert.alert("Erro", "Dados incompletos para atualização.");
+      }
+    } else {
+      // Ensure create logic uses compatible types if needed
+      await handleCreateUser(formData as Partial<UsuarioAuth>); // Cast if necessary
+    }
   };
+
+  // Implement frontend filtering
+  const filteredUsers = React.useMemo(() => {
+    let usersToFilter = users;
+
+    if (debouncedSearchText) {
+      const searchLower = debouncedSearchText.toLowerCase();
+      const fieldsToSearch = Object.entries(filters)
+                                .filter(([, isActive]) => isActive)
+                                .map(([key]) => key);
+
+      usersToFilter = usersToFilter.filter(user => {
+        return fieldsToSearch.some(field => {
+          const value = user[field as keyof typeof user];
+          // Handle potential non-string values and nulls/undefined
+          return value != null && value.toString().toLowerCase().includes(searchLower);
+        });
+      });
+    }
+
+    // Add other frontend filters here if needed (e.g., filter by status)
+    // Example: if (someStatusFilter !== 'all') {
+    //   usersToFilter = usersToFilter.filter(user => user.inativo === someStatusFilter);
+    // }
+
+    return usersToFilter;
+  }, [users, debouncedSearchText, filters]);
 
   if (initialLoading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
@@ -256,15 +253,7 @@ export default function UsuariosScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView 
-        style={styles.scrollContainer}
-        onScroll={({ nativeEvent }) => {
-          if (isCloseToBottom(nativeEvent)) {
-            handleLoadMore();
-          }
-        }}
-        scrollEventThrottle={400}
-      >
+      <ScrollView>
         <ThemedView style={styles.contentContainer}>
           {!isEditing ? (
             <>
@@ -323,60 +312,60 @@ export default function UsuariosScreen() {
               </TouchableOpacity>
 
               <ThemedView style={styles.table}>
-                {users.map((item) => (
-                  <ThemedView key={item.id} style={styles.tableRow}>
-                    <ThemedView style={styles.rowHeader}>
-                      <ThemedText style={styles.codigo}>{item.codusr}</ThemedText>
-                      <ThemedText style={styles.nome}>{item.nome}</ThemedText>
-                    </ThemedView>
-
-                    <ThemedView style={styles.rowContent}>
-                      <ThemedView style={styles.cell}>
-                        <ThemedText style={styles.label}>Supervisor</ThemedText>
-                        <ThemedText style={styles.value}>{item.supervisor}</ThemedText>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((item) => (
+                    <ThemedView key={item.codusr} style={styles.tableRow}>
+                      <ThemedView style={styles.rowHeader}>
+                        <ThemedText style={styles.codigo}>{item.codusr}</ThemedText>
+                        <ThemedText style={styles.nome}>{item.nome}</ThemedText>
                       </ThemedView>
-                      <ThemedView style={styles.cell}>
-                        <ThemedText style={styles.label}>Status</ThemedText>
-                        <ThemedText style={styles.value}>
-                          {item.inativo === 'N' ? 'Ativo' : 'Inativo'}
-                        </ThemedText>
+
+                      <ThemedView style={styles.rowContent}>
+                        <ThemedView style={styles.cell}>
+                          <ThemedText style={styles.label}>Supervisor</ThemedText>
+                          <ThemedText style={styles.value}>{item.supervisor}</ThemedText>
+                        </ThemedView>
+                        <ThemedView style={styles.cell}>
+                          <ThemedText style={styles.label}>Status</ThemedText>
+                          <ThemedText style={styles.value}>
+                            {item.inativo === 'N' ? 'Ativo' : 'Inativo'}
+                          </ThemedText>
+                        </ThemedView>
+                      </ThemedView>
+
+                      <ThemedView style={styles.actionIcons}>
+                        <TouchableOpacity onPress={() => {
+                          setSelectedUser(users.find(u => u.codusr === item.codusr));
+                          setIsEditing(true);
+                        }}>
+                          <Ionicons name="create-outline" size={20} color="#075eec" />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          onPress={() => handleDeleteUser(item.codusr)}
+                          style={styles.deleteButton}
+                        >
+                          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                        </TouchableOpacity>
                       </ThemedView>
                     </ThemedView>
-
-                    <ThemedView style={styles.actionIcons}>
-                      <TouchableOpacity onPress={() => {
-                        setSelectedUser(users.find(u => u.codusr === item.codusr));
-                        setIsEditing(true);
-                      }}>
-                        <Ionicons name="create-outline" size={20} color="#075eec" />
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        onPress={() => handleDeleteUser(item.id)}
-                        style={styles.deleteButton}
-                      >
-                        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                      </TouchableOpacity>
-                    </ThemedView>
-                  </ThemedView>
-                ))}
+                  ))
+                ) : (
+                  <View style={styles.emptyContainer}>
+                     <MaterialCommunityIcons name="account-search-outline" size={48} color="#ccc" />
+                     <ThemedText style={styles.emptyText}>Nenhum usuário encontrado com os filtros atuais.</ThemedText>
+                  </View>
+                )}
               </ThemedView>
             </>
           ) : (
             <UserForm
               user={selectedUser as User}
-              onSubmit={selectedUser ? handleUpdateUser : handleCreateUser}
+              onSubmit={handleSubmit}
               onCancel={() => {
                 setIsEditing(false);
                 setSelectedUser(undefined);
               }}
             />
-          )}
-          
-
-          {isUpdating && page > 1 && (
-            <View style={styles.loadingMore}>
-              <ActivityIndicator size="small" color="#229dc9" />
-            </View>
           )}
         </ThemedView>
       </ScrollView>
@@ -591,11 +580,19 @@ const styles = StyleSheet.create({
   inactiveStatus: {
     color: '#FF3B30',
   },
-  loadingMore: {
-    padding: 16,
-    alignItems: 'center',
-  },
   deleteButton: {
     padding: 8,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });
