@@ -79,15 +79,17 @@ export default function ClienteVendasScreen() {
     try {
       setLoading(true);
       // Get all notes and filter by client code
-      const allNotas = await apiCaller.notasMethods.getNotaByClientId(
-        params.codcli as string,
-        token
+      const allNotas = await apiCaller.notasMethods.getAllNotas(
+        null, // page
+        null, // limit
+        token,
+        { codcli: params.codcli as string }
       );
-      
+
       // Filter notes for the current client
       const clienteNotas = allNotas.filter((nota: NotasApp) => 
         nota.cliente && nota.codcli === parseInt(params.codcli as string)
-      );
+      ).sort((a: NotasApp, b: NotasApp) => new Date(b.emissao).getTime() - new Date(a.emissao).getTime());
       
       setNotas(clienteNotas);
     } catch (error) {

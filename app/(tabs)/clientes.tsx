@@ -381,6 +381,14 @@ export default function ClientesScreen() {
         style={styles.scrollContainer}
       >
         <ThemedView style={styles.contentContainer}>
+          {/* Loading indicator */}
+          {loading && clients.length === 0 && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#229dc9" />
+              <ThemedText style={styles.loadingText}>Carregando clientes...</ThemedText>
+            </View>
+          )}
+
           {filteredClients.length > 0 ? (
             filteredClients.map((client) => (
               <TouchableOpacity
@@ -731,5 +739,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     marginRight: 10,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
   },
 });

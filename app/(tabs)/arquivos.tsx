@@ -81,6 +81,13 @@ export default function ArquivosScreen() {
 
     return typeFilteredFiles.filter(doc => {
       const searchLower = searchText.toLowerCase();
+      
+      // Check if the file name (arquivo) contains the search text
+      if (doc.arquivo && doc.arquivo.toLowerCase().includes(searchLower)) {
+        return true;
+      }
+      
+      // Also check other fields based on active filters
       const fieldsToSearch = Object.keys(filters).filter(key => filters[key as keyof Filters]);
 
       return fieldsToSearch.some(field => {
@@ -130,22 +137,12 @@ export default function ArquivosScreen() {
         <ThemedView style={styles.contentContainer}>
           {/* Barra de busca */}
           <View style={styles.searchContainer}>
-            {/* <TextInput
+            <TextInput
               style={styles.searchInput}
-              placeholder="Buscar documentos..."
+              placeholder="Buscar por nome de arquivo..."
               value={searchText}
               onChangeText={setSearchText}
             />
-            <TouchableOpacity 
-              style={styles.filterButton}
-              onPress={() => setShowFilters(!showFilters)}
-            >
-              <MaterialCommunityIcons 
-                name="filter-variant" 
-                size={24} 
-                color="#229dc9" 
-              />
-            </TouchableOpacity> */}
           </View>
 
           {/* Filtros */}

@@ -126,7 +126,7 @@ export default function ClienteProdutosScreen() {
                     {formatCurrency(item.preco, item.moeda)}
                   </ThemedText>
                   <ThemedText style={styles.preco}>
-                    {`${item.IPI*100} %`}
+                    {`${item.IPI} %`}
                   </ThemedText>
                 </ThemedView>
               ))}

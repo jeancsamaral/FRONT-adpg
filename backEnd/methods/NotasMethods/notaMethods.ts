@@ -11,11 +11,11 @@ export async function createNota(nota: NotasApp, token: string) {
   return useAxios("/notas", token, nota, "post");
 }
 
-export async function getAllNotas(page: number, limit: number, token: string) {
+export async function getAllNotas(page: number | null, limit: number | null, token: string, filter: any) {
   if (environment.appState === "OFFLINE") {
     return Promise.resolve({ data: mockedNotas, total: mockedNotas.length });
   }
-  return useAxios(`/notas?page=${page}&limit=${limit}`, token, null, "get");
+  return useAxios(`/notas?page=${page}&limit=${limit}&filter=${JSON.stringify(filter)}`, token, null, "get");
 }
 
 export async function getNotaById(id: string, token: string) {

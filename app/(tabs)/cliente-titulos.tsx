@@ -82,11 +82,12 @@ export default function ClienteTitulosScreen() {
       
       // Get latest purchase (note)
       const allNotas = await apiCaller.notasMethods.getAllNotas(
-        1, // page
-        100, // limit
-        token
+        null, // page
+        null, // limit
+        token,
+        { codcli: params.codcli as string }
       );
-      
+
       // Filter notes for the current client and sort by emission date (descending)
       const clienteNotas = allNotas
         .filter((nota: NotasApp) => nota.cliente && nota.codcli === parseInt(params.codcli as string))
@@ -94,11 +95,11 @@ export default function ClienteTitulosScreen() {
       
       // Calculate summary
       const recebidosTotal = recebidos.reduce((sum: number, item: RecebidosApp) => {
-        const valor = item.valor;
+        const valor = parseFloat(item.valor as unknown as string);
         return sum + (isNaN(valor) ? 0 : valor);
       }, 0);
       const aReceberTotal = aReceber.reduce((sum: number, item: ReceberApp) => {
-        const valor = item.valor;
+        const valor = parseFloat(item.valor as unknown as string);
         return sum + (isNaN(valor) ? 0 : valor);
       }, 0);
       
