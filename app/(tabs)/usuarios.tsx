@@ -152,6 +152,7 @@ export default function UsuariosScreen() {
 
   const handleUpdateUser = async (formData: { codusr: number, nome: string; senha?: string; login: string; /* add other relevant fields */ }) => {
     console.log('Updating user:', formData);
+    await apiCaller.userMethods.updateUserAuth(formData.codusr.toString(), formData, token || '');
     // setPage(1);
     fetchUsers(); // Refetch the full list after update
     setIsEditing(false);
