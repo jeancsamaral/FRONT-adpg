@@ -108,7 +108,9 @@ export default function ClienteVendasScreen() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(value);
   };
 
@@ -201,11 +203,11 @@ export default function ClienteVendasScreen() {
                             </View>
                             <View style={styles.produtoDetail}>
                               <ThemedText style={styles.detailLabel}>Valor:</ThemedText>
-                              <ThemedText style={styles.detailValue}>{item.valor}</ThemedText>
+                              <ThemedText style={styles.detailValue}>{formatCurrency(parseFloat(item.valor))}</ThemedText>
                             </View>
                             <View style={styles.produtoDetail}>
                               <ThemedText style={styles.detailLabel}>Total:</ThemedText>
-                              <ThemedText style={styles.detailValue}>{item.total}</ThemedText>
+                              <ThemedText style={styles.detailValue}>{formatCurrency(parseFloat(item.total))}</ThemedText>
                             </View>
                           </View>
                         </View>
@@ -259,6 +261,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+    paddingBottom: 80,
   },
   clientName: {
     fontSize: 18,

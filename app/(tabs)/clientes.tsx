@@ -21,70 +21,6 @@ import { useAuthCheck } from "../hooks/useAuthCheck";
 
 const apiCaller = new ApiCaller();
 
-// Sample data for fallback
-const clientData: ClientesApp[] = [
-  {
-    id: 1,
-    codcli: 2,
-    razao: "MEYERMAN BRASIL IND COM LTDA",
-    fantasia: "MEYERMAN",
-    cidade: "SAO BERNARDO DO CAMPO",
-    estado: "SP",
-    fone: "11 4178-7444",
-    contato: "-",
-    email: "meyerman@meyerman.com.br",
-    pessoa: "J",
-    cnpj_cpf: "12.345.678/0001-90",
-    ie_rg: "123.456.789.000",
-    endereco: "Rua Example, 123",
-    bairro: "Centro",
-    cep: "12345-678",
-    pais: "Brasil",
-    inativo: "N",
-    excluido: "N",
-    registro: 1,
-    abertura: new Date(),
-    clidesde: new Date(),
-    transporta: "",
-    icms: 0,
-    itens: [],
-    memo: undefined,
-    notas: [],
-    recebidosApp: [],
-    receberApp: [],
-  },
-  {
-    id: 2,
-    codcli: 3,
-    razao: "INDUSTRIA QUIMICA LTDA",
-    fantasia: "QUIMICA",
-    cidade: "GUARULHOS",
-    estado: "SP",
-    fone: "11 2222-3333",
-    contato: "João Silva",
-    email: "contato@quimica.com.br",
-    pessoa: "J",
-    cnpj_cpf: "23.456.789/0001-01",
-    ie_rg: "234.567.890.001",
-    endereco: "Av Industrial, 456",
-    bairro: "Distrito Industrial",
-    cep: "07123-456",
-    pais: "Brasil",
-    inativo: "N",
-    excluido: "N",
-    registro: 2,
-    abertura: new Date(),
-    clidesde: new Date(),
-    transporta: "",
-    icms: 0,
-    itens: [],
-    memo: undefined,
-    notas: [],
-    recebidosApp: [],
-    receberApp: [],
-  },
-];
-
 // Interface for filters
 // interface Filters {
 //   codigo: boolean;
@@ -236,6 +172,8 @@ export default function ClientesScreen() {
         bairro: client.bairro || "",
         cep: client.cep || "",
         pais: client.pais || "",
+        observacao : client?.memo?.observacao || "",
+        follow : client?.memo?.follow || "",
       },
     });
   };
@@ -398,10 +336,10 @@ export default function ClientesScreen() {
               >
                 <View style={styles.clientHeader}>
                   <ThemedText style={styles.clientCode}>
-                    {client.codcli}
+                    {`${client.codcli} - nome fantasia: ${client.fantasia || '-'}`}
                   </ThemedText>
                   <ThemedText style={styles.clientName}>
-                    {client.razao || client.fantasia}
+                    {`${client.razao || '-'}`}
                   </ThemedText>
                 </View>
                 <View style={styles.clientDetails}>
@@ -635,6 +573,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+    paddingBottom: 80,
   },
   clientCard: {
     backgroundColor: "#fff",

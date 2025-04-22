@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 
 const apiCaller = new ApiCaller();
 
-type ClientesApp_Itens_IPI = ClientesApp_Itens & { IPI: number };
+type ClientesApp_Itens_IPI = ClientesApp_Itens & { IPI: number | string };
 
 export default function ClienteProdutosScreen() {
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function ClienteProdutosScreen() {
 
   // Format currency
   const formatCurrency = (value: number, currency: string) => {
-    return `${value.toFixed(2)} ${currency}`;
+    return `${value.toFixed(5)} ${currency}`;
   };
 
   if (loading) {
@@ -126,7 +126,7 @@ export default function ClienteProdutosScreen() {
                     {formatCurrency(item.preco, item.moeda)}
                   </ThemedText>
                   <ThemedText style={styles.preco}>
-                    {`${item.IPI} %`}
+                    {`${item.IPI || 'N/A'} ${item.IPI ? '%' : ''}`}
                   </ThemedText>
                 </ThemedView>
               ))}

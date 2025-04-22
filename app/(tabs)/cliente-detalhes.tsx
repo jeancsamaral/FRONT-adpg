@@ -63,7 +63,9 @@ export default function ClienteDetalhesScreen() {
           itens: [],
           notas: [],
           recebidosApp: [],
-          receberApp: []
+          receberApp: [],
+          observacao: params.observacao as string,
+          follow: params.follow as string
         };
         setClient(clientFromParams);
       } else {
@@ -179,6 +181,12 @@ export default function ClienteDetalhesScreen() {
             <InfoItem label="Contato" value={client.contato || '-'} />
             <InfoItem label="Telefone" value={client.fone || '-'} />
             <InfoItem label="E-mail" value={client.email || '-'} />
+          </ThemedView>
+
+          <ThemedView style={styles.card}>
+            <ThemedText style={styles.cardTitle}>Informações Adicionais</ThemedText>
+            <InfoItem label="Observação" value={client.observacao || '-'} />
+            <InfoItem label="Follow" value={client.follow || '-'} />
           </ThemedView>
 
           <View style={styles.actionButtons}>

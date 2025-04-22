@@ -49,8 +49,10 @@ export interface ClientesApp {
     inativo: string;
     excluido: string;
     registro: number;
+    memo?: ClientesApp_Memo | undefined; // dont come directly from the request
+    observacao?: string | undefined; // dont come directly from the request
+    follow?: string | undefined;
     itens: ClientesApp_Itens[];
-    memo?: ClientesApp_Memo;
     notas: NotasApp[];
     recebidosApp: RecebidosApp[];
     receberApp: ReceberApp[];
