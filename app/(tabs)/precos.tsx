@@ -64,6 +64,14 @@ const handlePricePress = (item: ProdutosApp_PrecosRegiao) => {
 export default function PrecosScreen() {
     const router = useRouter();
     const { token, loading: authLoading } = useAuthCheck();
+    const { token: authToken, user } = useAuth();
+    
+    // Check if user has permission to access pricing data
+    const hasPermission = React.useMemo(() => {
+        if (!user) return false;
+        return user.isAdmin || user.profileAccess.includes('supervisor');
+    }, [user]);
+    
     const [precosData, setPrecosData] = useState<ProdutosApp_PrecosRegiao[]>([]);
     const [initialLoading, setInitialLoading] = useState<boolean>(true);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
@@ -75,7 +83,7 @@ export default function PrecosScreen() {
         descricao: ''
     });
     const [debouncedFilters, setDebouncedFilters] = useState<Filters>(filters);
-    const { token: authToken } = useAuth();
+
     // Debounced filter effect
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -168,6 +176,38 @@ export default function PrecosScreen() {
 
     if (initialLoading) {
         return <ActivityIndicator size="large" color="#0000ff" />;
+    }
+    
+    // If user doesn't have permission, show error message
+    if (!hasPermission) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <LinearGradient
+                    colors={['#229dc9', '#1a7fa3']}
+                    style={styles.headerGradient}
+                >
+                    <View style={styles.header}>
+                        <View style={styles.headerContent}>
+                            <MaterialCommunityIcons name="cash-multiple" size={32} color="#fff" />
+                            <ThemedText style={styles.title}>Preços por Região</ThemedText>
+                        </View>
+                    </View>
+                </LinearGradient>
+                
+                <View style={styles.noPermissionContainer}>
+                    <MaterialCommunityIcons name="lock" size={64} color="#ccc" />
+                    <ThemedText style={styles.noPermissionText}>
+                        Acesso restrito. Esta área é reservada para administradores e supervisores.
+                    </ThemedText>
+                    <TouchableOpacity 
+                        style={styles.backButton}
+                        onPress={() => router.back()}
+                    >
+                        <ThemedText style={styles.backButtonText}>Voltar</ThemedText>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
     }
 
     return (
@@ -590,6 +630,32 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     loadMoreButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    noPermissionContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    noPermissionText: {
+        fontSize: 18,
+        textAlign: 'center',
+        color: '#666',
+        marginTop: 16,
+        marginBottom: 24,
+    },
+    backButton: {
+        backgroundColor: '#229dc9',
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backButtonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',

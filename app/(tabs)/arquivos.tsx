@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, TouchableOpacity, ScrollView, View, SafeAreaView, TextInput, ActivityIndicator, Linking, Alert, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -21,6 +21,7 @@ interface Filters {
 export default function ArquivosScreen() {
   const [activeTab, setActiveTab] = useState<'FISPQ' | 'TDS'>('FISPQ');
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     nome: true,
@@ -32,37 +33,71 @@ export default function ArquivosScreen() {
   // New states for API integration
   const [files, setFiles] = useState<Arquivos_Generico[]>([]);
   const [loading, setLoading] = useState(false);
+  const [overlayLoading, setOverlayLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalFiles, setTotalFiles] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Debounce search text updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   // Function to fetch files from the API
   const fetchFiles = async () => {
     try {
       setLoading(true);
+      // Show overlay loading only when loading first page or changing tab/search
+      if (page === 1) {
+        setOverlayLoading(true);
+      }
       setError(null);
-      const response = await getAllFiles(page, limit, token || '');
+      const response = await getAllFiles(page, limit, debouncedSearchText, token || '');
+      console.log({page, limit, search: debouncedSearchText, token});
       console.log(response);
-      setFiles(response.data);
+      
+      // Update files array based on page number
+      if (page === 1) {
+        // If it's the first page, replace the files array
+        setFiles(response.data);
+      } else {
+        // If it's a subsequent page, append to the existing files array
+        setFiles(prevFiles => [...prevFiles, ...response.data]);
+      }
+      
       setTotalFiles(response.total);
     } catch (err) {
       console.error('Error fetching files:', err);
       setError('Erro ao carregar os arquivos. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
+      setOverlayLoading(false);
     }
   };
 
-  // Fetch files when component mounts or when page/limit changes
+  // Fetch files when relevant params change
   useEffect(() => {
     fetchFiles();
-  }, [page, limit]);
+  }, [page, limit, token, activeTab, debouncedSearchText]);
+  
+  // Reset to page 1 when search text changes
+  useEffect(() => {
+    if (page !== 1) {
+      setPage(1);
+    }
+  }, [debouncedSearchText, activeTab]);
 
   // Function to handle tab change
   const handleTabChange = (tab: 'FISPQ' | 'TDS') => {
     setActiveTab(tab);
-    setPage(1); // Reset to first page when changing tabs
+    // Reset to first page and clear files when changing tabs
+    setPage(1);
+    setFiles([]);
   };
 
   // Function to handle load more
@@ -75,12 +110,15 @@ export default function ArquivosScreen() {
   // Função para filtrar os documentos baseado na busca e filtros
   const filteredData = React.useMemo(() => {
     // First filter by file type based on active tab
-    const typeFilteredFiles = files.filter(file => file.type === activeTab);
+    const typeFilteredFiles = files.filter(file => 
+      file.type?.toUpperCase() === activeTab || 
+      (activeTab === 'FISPQ' && !file.type) // Default to FISPQ if type is missing
+    );
     
-    if (!searchText) return typeFilteredFiles;
+    if (!debouncedSearchText) return typeFilteredFiles;
 
     return typeFilteredFiles.filter(doc => {
-      const searchLower = searchText.toLowerCase();
+      const searchLower = debouncedSearchText.toLowerCase();
       
       // Check if the file name (arquivo) contains the search text
       if (doc.arquivo && doc.arquivo.toLowerCase().includes(searchLower)) {
@@ -95,7 +133,7 @@ export default function ArquivosScreen() {
         return value && value.toString().toLowerCase().includes(searchLower);
       });
     });
-  }, [files, searchText, filters, activeTab]);
+  }, [files, debouncedSearchText, filters, activeTab]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -137,12 +175,36 @@ export default function ArquivosScreen() {
         <ThemedView style={styles.contentContainer}>
           {/* Barra de busca */}
           <View style={styles.searchContainer}>
+            <MaterialCommunityIcons 
+              name="magnify" 
+              size={20} 
+              color={loading && debouncedSearchText ? "#229dc9" : "#999"} 
+              style={styles.searchIcon}
+            />
             <TextInput
-              style={styles.searchInput}
+              style={[
+                styles.searchInput,
+                debouncedSearchText !== '' && styles.searchInputActive
+              ]}
               placeholder="Buscar por nome de arquivo..."
               value={searchText}
               onChangeText={setSearchText}
             />
+            {searchText !== '' && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => setSearchText('')}
+              >
+                <MaterialCommunityIcons name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
+            {loading && debouncedSearchText !== '' && (
+              <ActivityIndicator 
+                size="small" 
+                color="#229dc9" 
+                style={styles.searchLoading} 
+              />
+            )}
           </View>
 
           {/* Filtros */}
@@ -184,11 +246,21 @@ export default function ArquivosScreen() {
             </View>
           )}
 
-          {/* Loading indicator */}
-          {loading && files?.length === 0 && (
+          {/* Loading indicator for initial load */}
+          {loading && files.length === 0 && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#229dc9" />
               <ThemedText style={styles.loadingText}>Carregando arquivos...</ThemedText>
+            </View>
+          )}
+
+          {/* Loading overlay */}
+          {overlayLoading && files.length > 0 && (
+            <View style={styles.loadingOverlay}>
+              <View style={styles.loadingOverlayContent}>
+                <ActivityIndicator size="large" color="#229dc9" />
+                <ThemedText style={styles.loadingText}>Atualizando...</ThemedText>
+              </View>
             </View>
           )}
 
@@ -337,10 +409,18 @@ export default function ArquivosScreen() {
             </View>
           )}
 
-          {/* Loading indicator shown when loading the next page triggered by the button */}
+          {/* Loading indicator shown when loading the next page */}
           {loading && page > 1 && (
-             <View style={styles.loadMoreContainer}> // Reuse container style
-                <ActivityIndicator size="small" color="#229dc9" />
+             <View style={styles.loadMoreContainer}>
+                <TouchableOpacity
+                  style={[styles.loadMoreButton, styles.loadMoreButtonLoading]}
+                  disabled={true}
+                >
+                  <View style={styles.loadMoreButtonContent}>
+                    <ActivityIndicator size="small" color="#fff" style={styles.loadMoreButtonIcon} />
+                    <ThemedText style={styles.loadMoreButtonText}>Carregando...</ThemedText>
+                  </View>
+                </TouchableOpacity>
              </View>
           )}
         </ThemedView>
@@ -472,15 +552,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 16,
     gap: 8,
+    alignItems: 'center',
+    position: 'relative',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    paddingLeft: 40, // Space for search icon
+    paddingRight: 40, // Space for the clear button
+  },
+  searchInputActive: {
+    borderColor: '#229dc9',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 12,
+    zIndex: 1,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 8,
+    padding: 8,
+    zIndex: 1,
   },
   filterButton: {
     backgroundColor: '#fff',
@@ -560,6 +658,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
+  loadMoreButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   loadMoreButtonText: {
     color: '#fff',
     fontSize: 16,
@@ -595,5 +698,39 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
+  },
+  searchLoading: {
+    position: 'absolute',
+    right: 8,
+    padding: 8,
+    zIndex: 1,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  loadingOverlayContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loadMoreButtonLoading: {
+    backgroundColor: '#1a7fa3',
+  },
+  loadMoreButtonIcon: {
+    marginRight: 8,
   },
 }); 

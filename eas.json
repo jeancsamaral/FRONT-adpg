@@ -1,35 +1,37 @@
 {
-    "build": {
-      "preview": {
-        "android": {
-          "buildType": "apk"
-        },
-        "distribution": "internal"
-      },
-      "development": {
-        "android": {
-          "buildType": "apk"
-        },
-        "developmentClient": true,
-        "distribution": "internal",
-        "ios": {}
-      },
-      "preview2": {
-        "android": {
-          "gradleCommand": ":app:assembleRelease"
-        }
-      },
-      "production": {
-        "android": {
-          "buildType": "apk"
-        },
-        "ios": {
-          "distribution": "store"
-        },
-        "distribution": "store"
-      }
-    },
-    "cli": {
-      "version": ">= 0.38.3"
-    }
-  }
+    "build":  {
+                  "preview":  {
+                                  "android":  {
+                                                  "buildType":  "apk"
+                                              },
+                                  "distribution":  "internal"
+                              },
+                  "development":  {
+                                      "android":  {
+                                                      "buildType":  "apk"
+                                                  },
+                                      "developmentClient":  true,
+                                      "distribution":  "internal",
+                                      "ios":  {
+
+                                              }
+                                  },
+                  "preview2":  {
+                                   "android":  {
+                                                   "gradleCommand":  ":app:assembleRelease"
+                                               }
+                               },
+                  "production":  {
+                                     "android":  {
+                                                     "buildType":  "app-bundle"
+                                                 },
+                                     "ios":  {
+                                                 "distribution":  "store"
+                                             },
+                                     "distribution":  "store"
+                                 }
+              },
+    "cli":  {
+                "version":  "\u003e= 0.38.3"
+            }
+}
