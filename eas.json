@@ -28,10 +28,12 @@
                                      "ios":  {
                                                  "distribution":  "store"
                                              },
-                                     "distribution":  "store"
+                                     "distribution":  "store",
+                                     "autoIncrement":  true
                                  }
               },
     "cli":  {
-                "version":  "\u003e= 0.38.3"
+                "version":  "\u003e= 0.38.3",
+                "appVersionSource":  "remote"
             }
 }

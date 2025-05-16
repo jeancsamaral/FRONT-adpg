@@ -19,7 +19,7 @@ interface Filters {
 }
 
 export default function ArquivosScreen() {
-  const [activeTab, setActiveTab] = useState<'FISPQ' | 'TDS'>('FISPQ');
+  const [activeTab, setActiveTab] = useState<string>('FDS');
   const [searchText, setSearchText] = useState('');
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -93,9 +93,8 @@ export default function ArquivosScreen() {
   }, [debouncedSearchText, activeTab]);
 
   // Function to handle tab change
-  const handleTabChange = (tab: 'FISPQ' | 'TDS') => {
+  const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    // Reset to first page and clear files when changing tabs
     setPage(1);
     setFiles([]);
   };
@@ -111,8 +110,8 @@ export default function ArquivosScreen() {
   const filteredData = React.useMemo(() => {
     // First filter by file type based on active tab
     const typeFilteredFiles = files.filter(file => 
-      file.type?.toUpperCase() === activeTab || 
-      (activeTab === 'FISPQ' && !file.type) // Default to FISPQ if type is missing
+      (file.type?.toUpperCase() === activeTab.toUpperCase()) || 
+      (activeTab.toUpperCase() === 'FDS' && !file.type)
     );
     
     if (!debouncedSearchText) return typeFilteredFiles;
@@ -154,11 +153,11 @@ export default function ArquivosScreen() {
 
       <View style={styles.tabContainer}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'FISPQ' && styles.activeTab]}
-          onPress={() => handleTabChange('FISPQ')}
+          style={[styles.tab, activeTab === 'FDS' && styles.activeTab]}
+          onPress={() => handleTabChange('FDS')}
         >
-          <ThemedText style={[styles.tabText, activeTab === 'FISPQ' && styles.activeTabText]}>
-            FISPQ
+          <ThemedText style={[styles.tabText, activeTab === 'FDS' && styles.activeTabText]}>
+            FDS
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -275,11 +274,15 @@ export default function ArquivosScreen() {
                       // Get the full URL with protocol
                       const fullUrl = `https://${item.linkftp}`;
 
-                      // Get the file name from the URL
-                      const fileName = item.arquivo || fullUrl.split('/').pop() || 'downloaded_file.pdf';
+                      // Get the file name from the URL and garantir extensão .pdf
+                      let fileName = item.arquivo || fullUrl.split('/').pop() || 'downloaded_file.pdf';
+                      if (!fileName.toLowerCase().endsWith('.pdf')) {
+                        fileName = fileName.replace(/\.[^/.]+$/, '') + '.pdf';
+                      }
 
-                      // Create a temporary file path
-                      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+                      // Definir caminho padrão de downloads
+                      const downloadDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+                      const fileUri = `${downloadDir}${fileName}`;
 
                       // Download the file using the full URL
                       const downloadResult = await FileSystem.downloadAsync(
@@ -288,66 +291,24 @@ export default function ArquivosScreen() {
                       );
 
                       if (downloadResult.status === 200) {
-                        // Check if sharing is available
-                        const isAvailable = await Sharing.isAvailableAsync();
-
-                        if (isAvailable) {
-                          // Show success message before sharing
-                          Alert.alert(
-                            "Download concluído",
-                            "O arquivo foi baixado. Escolha como salvá-lo.",
-                            [{ text: "OK" }]
-                          );
-
-                          // Share the file
-                          await Sharing.shareAsync(fileUri, {
-                            mimeType: 'application/pdf', // Consider making this dynamic
-                            dialogTitle: 'Salvar arquivo',
-                            UTI: 'public.pdf' // Consider making dynamic or removing for cross-platform
-                          });
-
-                        } else {
-                          // If sharing is not available, open the file in browser
-                          Alert.alert(
-                            "Download concluído",
-                            "Compartilhamento não disponível. Abrindo arquivo no navegador...",
-                            [{ text: "OK" }]
-                          );
-                          await Linking.openURL(fullUrl); // Use full URL
-                        }
+                        // Abrir automaticamente o arquivo PDF
+                        await FileSystem.getContentUriAsync(downloadResult.uri).then(async (cUri) => {
+                          await Linking.openURL(cUri);
+                        });
                       } else {
-                         // Specific alert for download failure status
-                         Alert.alert(
+                        Alert.alert(
                           "Erro no Download",
                           `Falha ao baixar o arquivo. Status: ${downloadResult.status}`,
-                          [{ text: "OK" }]
+                          [{ text: "Ok" }]
                         );
-                        throw new Error(`Download failed with status ${downloadResult.status}`);
                       }
                     } catch (error) {
                       console.error('Error handling file:', error);
-                      // Construct URL again for the error handler
-                      const fullUrl = `https://${item.linkftp}`;
                       Alert.alert(
                         "Erro",
-                        "Ocorreu um erro ao processar o arquivo. Tente abrir no navegador?",
+                        "Ocorreu um erro ao processar o arquivo.",
                         [
-                          { text: "Cancelar", style: "cancel" },
-                          {
-                            text: "Abrir no Navegador",
-                            onPress: async () => {
-                              try {
-                                await Linking.openURL(fullUrl); // Use full URL
-                              } catch (e) {
-                                console.error('Error opening URL:', e);
-                                Alert.alert(
-                                  "Erro",
-                                  "Não foi possível abrir o link.",
-                                  [{ text: "OK" }]
-                                );
-                              }
-                            }
-                          }
+                          { text: "Ok", style: "cancel" }
                         ]
                       );
                     }
@@ -366,7 +327,7 @@ export default function ArquivosScreen() {
                     <View style={styles.column}>
                       <View style={styles.cell}>
                         <ThemedText style={styles.label}>Tipo</ThemedText>
-                        <ThemedText style={styles.value}>{item.type}</ThemedText>
+                        <ThemedText style={styles.value}>{item.type === 'FISPQ' ? 'FDS' : item.type}</ThemedText>
                       </View>
                     </View>
                     <View style={styles.column}>

@@ -2,13 +2,11 @@
   "expo": {
     "name": "AdpgApp",
     "slug": "adpg",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "edpg",
     "userInterfaceStyle": "automatic",
-
-
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -16,14 +14,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.brunopimentelff.EDPG"
+      "bundleIdentifier": "com.brunopimentelff.EDPG",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.brunopimentelff.EDPG"
+      "package": "com.brunopimentelff.EDPG",
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",

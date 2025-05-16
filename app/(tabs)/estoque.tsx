@@ -166,6 +166,18 @@ export default function EstoqueScreen() {
     });
   };
 
+  // Adicione uma função utilitária para formatar números com vírgula
+  const formatNumber = (value: number | string | undefined) => {
+    if (!value) return '0,00';
+    if (typeof value === 'string') {
+      value = parseFloat(value);
+    }
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   if (initialLoading) {
     return <ActivityIndicator size="large" color="#229dc9" />;
   }
@@ -315,52 +327,57 @@ export default function EstoqueScreen() {
 
           <ThemedView style={[styles.table, isUpdating && styles.updatingTable]}>
             {products.map((item: any) => (
-              <TouchableOpacity
-                key={item.codigo}
-                onPress={() => handleProductPress(item)}
-              >
-                <ThemedView style={styles.tableRow}>
-                  <View style={styles.rowHeader}>
-                    <ThemedText style={styles.codigo}>
-                      {item.codigo}
-                    </ThemedText>
-                    <ThemedText style={styles.descricao}>
-                      {item.descricao}
-                    </ThemedText>
+              <ThemedView key={item.codigo} style={styles.tableRow}>
+                <View style={styles.rowHeader}>
+                  <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
+                  <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
+                </View>
+                <View style={styles.rowContent}>
+                  <View style={styles.column}>
+                    <View style={styles.cell}>
+                      <ThemedText style={styles.label}>Un.</ThemedText>
+                      <ThemedText style={styles.value}>{item.un}</ThemedText>
+                    </View>
+                    <View style={styles.cell}>
+                      <ThemedText style={styles.label}>Moeda</ThemedText>
+                      <ThemedText style={styles.value}>{item.moeda}</ThemedText>
+                    </View>
                   </View>
-
+                  <View style={styles.column}>
+                    <View style={styles.cell}>
+                      <ThemedText style={styles.label}>Venda</ThemedText>
+                      <ThemedText style={styles.value}>{formatNumber(item.venda)}</ThemedText>
+                    </View>
+                    <View style={styles.cell}>
+                      <ThemedText style={styles.label}>Estoque</ThemedText>
+                      <ThemedText style={styles.value}>{formatNumber(item.estoque)}</ThemedText>
+                    </View>
+                  </View>
+                </View>
+                {/* Exibir informações adicionais como Reservado, Comprado, Disponível, etc. se existirem */}
+                {item.reservado !== undefined && (
                   <View style={styles.rowContent}>
                     <View style={styles.column}>
                       <View style={styles.cell}>
-                        <ThemedText style={styles.label}>Un.</ThemedText>
-                        <ThemedText style={styles.value}>
-                          {item.un}
-                        </ThemedText>
-                      </View>
-                      <View style={styles.cell}>
-                        <ThemedText style={styles.label}>Moeda</ThemedText>
-                        <ThemedText style={styles.value}>
-                          {item.moeda}
-                        </ThemedText>
+                        <ThemedText style={[styles.label, {color: '#e74c3c'}]}>Reservado</ThemedText>
+                        <ThemedText style={[styles.value, {color: '#e74c3c'}]}>{formatNumber(item.reservado)}</ThemedText>
                       </View>
                     </View>
                     <View style={styles.column}>
                       <View style={styles.cell}>
-                        <ThemedText style={styles.label}>Venda</ThemedText>
-                        <ThemedText style={styles.value}>
-                          {item.venda}
-                        </ThemedText>
+                        <ThemedText style={[styles.label, {color: '#27ae60'}]}>Comprado</ThemedText>
+                        <ThemedText style={[styles.value, {color: '#27ae60'}]}>{formatNumber(item.comprado)}</ThemedText>
                       </View>
+                    </View>
+                    <View style={styles.column}>
                       <View style={styles.cell}>
-                        <ThemedText style={styles.label}>Estoque</ThemedText>
-                        <ThemedText style={styles.value}>
-                          {item.estoque}
-                        </ThemedText>
+                        <ThemedText style={[styles.label, {color: '#f1c40f'}]}>Disponível</ThemedText>
+                        <ThemedText style={[styles.value, {color: '#f1c40f'}]}>{formatNumber(item.disponivel)}</ThemedText>
                       </View>
                     </View>
                   </View>
-                </ThemedView>
-              </TouchableOpacity>
+                )}
+              </ThemedView>
             ))}
           </ThemedView>
 
