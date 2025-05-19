@@ -280,21 +280,53 @@ export default function ArquivosScreen() {
                         fileName = fileName.replace(/\.[^/.]+$/, '') + '.pdf';
                       }
 
-                      // Definir caminho padrão de downloads
+                      // Definir caminho para downloads com extensão PDF garantida
                       const downloadDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
                       const fileUri = `${downloadDir}${fileName}`;
 
-                      // Download the file using the full URL
+                      // Mostrar indicador de loading
+                      Alert.alert(
+                        "Download em andamento",
+                        "Baixando o arquivo, por favor aguarde..."
+                      );
+
+                      // Download the file using the full URL with explicit PDF mime type
                       const downloadResult = await FileSystem.downloadAsync(
                         fullUrl,
-                        fileUri
+                        fileUri,
+                        {
+                          headers: {
+                            'Accept': 'application/pdf',
+                            'Content-Type': 'application/pdf'
+                          },
+                          cache: false
+                        }
                       );
 
                       if (downloadResult.status === 200) {
-                        // Abrir automaticamente o arquivo PDF
-                        await FileSystem.getContentUriAsync(downloadResult.uri).then(async (cUri) => {
-                          await Linking.openURL(cUri);
-                        });
+                        // Verificar se o arquivo existe e não está vazio
+                        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+                        
+                        if (!fileInfo.exists) {
+                          throw new Error('Arquivo não encontrado após download');
+                        }
+                        
+                        if (Platform.OS === 'ios') {
+                          // No iOS, compartilhar o arquivo
+                          if (await Sharing.isAvailableAsync()) {
+                            await Sharing.shareAsync(fileUri, {
+                              UTI: 'com.adobe.pdf',
+                              mimeType: 'application/pdf'
+                            });
+                          } else {
+                            // Tentar abrir diretamente se compartilhamento não estiver disponível
+                            await Linking.openURL(fileUri);
+                          }
+                        } else {
+                          // No Android, abrir o arquivo com app padrão de PDF
+                          const contentUri = await FileSystem.getContentUriAsync(fileUri);
+                          await Linking.openURL(contentUri);
+                        }
                       } else {
                         Alert.alert(
                           "Erro no Download",
@@ -306,7 +338,7 @@ export default function ArquivosScreen() {
                       console.error('Error handling file:', error);
                       Alert.alert(
                         "Erro",
-                        "Ocorreu um erro ao processar o arquivo.",
+                        "Ocorreu um erro ao processar o arquivo. Certifique-se que o arquivo está disponível e é um PDF válido.",
                         [
                           { text: "Ok", style: "cancel" }
                         ]
