@@ -66,7 +66,7 @@ export default function PrecosScreen() {
     const { token, loading: authLoading } = useAuthCheck();
     const { token: authToken, user } = useAuth();
     
-    // Check if user has permission to access pricing data
+    // Check if user has permission to see purchase prices
     const hasPermission = React.useMemo(() => {
         if (!user) return false;
         return user.isAdmin || user.profileAccess.includes('supervisor');
@@ -177,38 +177,6 @@ export default function PrecosScreen() {
     if (initialLoading) {
         return <ActivityIndicator size="large" color="#0000ff" />;
     }
-    
-    // If user doesn't have permission, show error message
-    if (!hasPermission) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <LinearGradient
-                    colors={['#229dc9', '#1a7fa3']}
-                    style={styles.headerGradient}
-                >
-                    <View style={styles.header}>
-                        <View style={styles.headerContent}>
-                            <MaterialCommunityIcons name="cash-multiple" size={32} color="#fff" />
-                            <ThemedText style={styles.title}>Preços por Região</ThemedText>
-                        </View>
-                    </View>
-                </LinearGradient>
-                
-                <View style={styles.noPermissionContainer}>
-                    <MaterialCommunityIcons name="lock" size={64} color="#ccc" />
-                    <ThemedText style={styles.noPermissionText}>
-                        Acesso restrito. Esta área é reservada para administradores e supervisores.
-                    </ThemedText>
-                    <TouchableOpacity 
-                        style={styles.backButton}
-                        onPress={() => router.back()}
-                    >
-                        <ThemedText style={styles.backButtonText}>Voltar</ThemedText>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
-        );
-    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -312,7 +280,11 @@ export default function PrecosScreen() {
                                         </View>
                                         <View style={styles.cell}>
                                             <ThemedText style={styles.label}>Preço Compra</ThemedText>
-                                            <ThemedText style={styles.value}>{formatNumber(item.precompra)}</ThemedText>
+                                            {hasPermission ? (
+                                                <ThemedText style={styles.value}>{formatNumber(item.precompra)}</ThemedText>
+                                            ) : (
+                                                <ThemedText style={styles.restrictedValue}>Restrito</ThemedText>
+                                            )}
                                         </View>
                                     </View>
                                 </View>
@@ -634,30 +606,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    noPermissionContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    noPermissionText: {
-        fontSize: 18,
-        textAlign: 'center',
-        color: '#666',
-        marginTop: 16,
-        marginBottom: 24,
-    },
-    backButton: {
-        backgroundColor: '#229dc9',
-        paddingVertical: 12,
-        paddingHorizontal: 30,
-        borderRadius: 25,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    backButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
+    restrictedValue: {
+        fontSize: 14,
+        color: '#999',
+        fontStyle: 'italic',
     },
 }); 

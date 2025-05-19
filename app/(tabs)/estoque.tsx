@@ -14,13 +14,18 @@ const apiCaller = new ApiCaller();
 
 // Interface for product type
 interface Product {
-  codigo: string;
+  id: number;
+  codprod: string;
+  codproduto: string;
   descricao: string;
-  un: string;
+  unidadeDePeso: string;
   moeda: string;
-  venda: string;
-  estoque: string;
-  grupo: string;
+  preco: string;
+  estoque: number;
+  reservado: number;
+  comprado: number;
+  disponivel: number;
+  codgru: number;
 }
 
 // Interface for group type
@@ -94,7 +99,6 @@ export default function EstoqueScreen() {
         token
       );
 
-      console.log(`fetchProducts page ${pageNumber} response length:`, response.products?.length);
 
       if (response.groups) {
         setGroups(response.groups);
@@ -168,11 +172,21 @@ export default function EstoqueScreen() {
 
   // Adicione uma função utilitária para formatar números com vírgula
   const formatNumber = (value: number | string | undefined) => {
-    if (!value) return '0,00';
+    if (value === undefined || value === null) return '0,00';
+    
+    // Convert string to number if needed
+    let numValue: number;
     if (typeof value === 'string') {
-      value = parseFloat(value);
+      // Handle empty strings
+      if (value.trim() === '') return '0,00';
+      numValue = parseFloat(value);
+      if (isNaN(numValue)) return '0,00';
+    } else {
+      numValue = value;
     }
-    return value.toLocaleString('pt-BR', {
+    
+    // Format with Brazilian locale (comma as decimal separator)
+    return numValue.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
@@ -327,16 +341,18 @@ export default function EstoqueScreen() {
 
           <ThemedView style={[styles.table, isUpdating && styles.updatingTable]}>
             {products.map((item: any) => (
-              <ThemedView key={item.codigo} style={styles.tableRow}>
+              <ThemedView key={item.codproduto || item.codigo} style={styles.tableRow}>
                 <View style={styles.rowHeader}>
-                  <ThemedText style={styles.codigo}>{item.codigo}</ThemedText>
+                  <ThemedText style={styles.productCode}>
+                    {item.codproduto ? `${item.codproduto}` : item.codigo} 
+                  </ThemedText>
                   <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
                 </View>
                 <View style={styles.rowContent}>
                   <View style={styles.column}>
                     <View style={styles.cell}>
                       <ThemedText style={styles.label}>Un.</ThemedText>
-                      <ThemedText style={styles.value}>{item.un}</ThemedText>
+                      <ThemedText style={styles.value}>{item.unidadeDePeso || item.un}</ThemedText>
                     </View>
                     <View style={styles.cell}>
                       <ThemedText style={styles.label}>Moeda</ThemedText>
@@ -346,37 +362,30 @@ export default function EstoqueScreen() {
                   <View style={styles.column}>
                     <View style={styles.cell}>
                       <ThemedText style={styles.label}>Venda</ThemedText>
-                      <ThemedText style={styles.value}>{formatNumber(item.venda)}</ThemedText>
+                      <ThemedText style={styles.value}>{formatNumber(item.preco || item.venda || 0)}</ThemedText>
                     </View>
                     <View style={styles.cell}>
                       <ThemedText style={styles.label}>Estoque</ThemedText>
-                      <ThemedText style={styles.value}>{formatNumber(item.estoque)}</ThemedText>
+                      <ThemedText style={styles.value}>{formatNumber(item.estoque || 0)}</ThemedText>
                     </View>
                   </View>
                 </View>
-                {/* Exibir informações adicionais como Reservado, Comprado, Disponível, etc. se existirem */}
-                {item.reservado !== undefined && (
-                  <View style={styles.rowContent}>
-                    <View style={styles.column}>
-                      <View style={styles.cell}>
-                        <ThemedText style={[styles.label, {color: '#e74c3c'}]}>Reservado</ThemedText>
-                        <ThemedText style={[styles.value, {color: '#e74c3c'}]}>{formatNumber(item.reservado)}</ThemedText>
-                      </View>
-                    </View>
-                    <View style={styles.column}>
-                      <View style={styles.cell}>
-                        <ThemedText style={[styles.label, {color: '#27ae60'}]}>Comprado</ThemedText>
-                        <ThemedText style={[styles.value, {color: '#27ae60'}]}>{formatNumber(item.comprado)}</ThemedText>
-                      </View>
-                    </View>
-                    <View style={styles.column}>
-                      <View style={styles.cell}>
-                        <ThemedText style={[styles.label, {color: '#f1c40f'}]}>Disponível</ThemedText>
-                        <ThemedText style={[styles.value, {color: '#f1c40f'}]}>{formatNumber(item.disponivel)}</ThemedText>
-                      </View>
-                    </View>
+
+                {/* Stock availability information */}
+                <View style={styles.stockInfoContainer}>
+                  <View style={styles.stockInfoItem}>
+                    <ThemedText style={[styles.stockLabel, styles.reservadoText]}>Reservado</ThemedText>
+                    <ThemedText style={[styles.stockValue, styles.reservadoText]}>{formatNumber(item.reservado || 0)}</ThemedText>
                   </View>
-                )}
+                  <View style={styles.stockInfoItem}>
+                    <ThemedText style={[styles.stockLabel, styles.compradoText]}>Comprado</ThemedText>
+                    <ThemedText style={[styles.stockValue, styles.compradoText]}>{formatNumber(item.comprado || 0)}</ThemedText>
+                  </View>
+                  <View style={styles.stockInfoItem}>
+                    <ThemedText style={[styles.stockLabel, styles.disponivelText]}>Disponível</ThemedText>
+                    <ThemedText style={[styles.stockValue, styles.disponivelText]}>{formatNumber(item.disponivel || 0)}</ThemedText>
+                  </View>
+                </View>
               </ThemedView>
             ))}
           </ThemedView>
@@ -477,7 +486,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  codigo: {
+  productCode: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#229dc9",
@@ -651,4 +660,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   } as const,
+  stockInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  stockInfoItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  stockLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  stockValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  reservadoText: {
+    color: '#e74c3c',
+  },
+  compradoText: {
+    color: '#27ae60',
+  },
+  disponivelText: {
+    color: '#f1c40f',
+  },
 });

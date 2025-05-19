@@ -336,7 +336,7 @@ export default function ClientesScreen() {
               >
                 <View style={styles.clientHeader}>
                   <ThemedText style={styles.clientCode}>
-                    {`${client.codcli} - nome fantasia: ${client.fantasia || '-'}`}
+                    {`${client.codcli} - ${client.fantasia || '-'}`}
                   </ThemedText>
                   <ThemedText style={styles.clientName}>
                     {`${client.razao || '-'}`}
