@@ -687,6 +687,6 @@ const styles = StyleSheet.create({
     color: '#27ae60',
   },
   disponivelText: {
-    color: '#f1c40f',
+    color: '#229dc9',
   },
 });

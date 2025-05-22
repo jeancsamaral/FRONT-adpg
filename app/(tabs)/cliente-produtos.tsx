@@ -19,6 +19,7 @@ export default function ClienteProdutosScreen() {
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [clienteItens, setClienteItens] = useState<ClientesApp_Itens_IPI[]>([]);
+  const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     fetchClienteProdutos();
@@ -64,6 +65,17 @@ export default function ClienteProdutosScreen() {
     return `${value.toFixed(5)} ${currency}`;
   };
 
+  const toggleItemExpand = (id: number) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const isItemExpanded = (id: number) => {
+    return expandedItems[id] || false;
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -105,30 +117,62 @@ export default function ClienteProdutosScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContentContainer}
+      >
         <ThemedView style={styles.contentContainer}>
           <ThemedText style={styles.clientName}>{params.razao || 'Cliente'}</ThemedText>
           
           {clienteItens.length > 0 ? (
-            <ThemedView style={styles.tableContainer}>
-              <View style={styles.tableHeader}>
-                <ThemedText style={styles.headerCodigo}>Código</ThemedText>
-                <ThemedText style={styles.headerDescricao}>Descrição</ThemedText>
-                <ThemedText style={styles.headerPreco}>Preço</ThemedText>
-                <ThemedText style={styles.headerPreco}>IPI</ThemedText>
-              </View>
-              
+            <ThemedView style={styles.productsContainer}>
               {clienteItens.map((item) => (
-                <ThemedView key={item.id} style={styles.tableRow}>
-                  <ThemedText style={styles.codigo}>{item.codproduto}</ThemedText>
-                  <ThemedText style={styles.descricao}>{item.descricao}</ThemedText>
-                  <ThemedText style={styles.preco}>
-                    {formatCurrency(item.preco, item.moeda)}
-                  </ThemedText>
-                  <ThemedText style={styles.preco}>
-                    {`${item.IPI || 'N/A'} ${item.IPI ? '%' : ''}`}
-                  </ThemedText>
-                </ThemedView>
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={styles.productCard}
+                  onPress={() => toggleItemExpand(item.id)}
+                >
+                  <View style={styles.productHeader}>
+                    <View style={styles.productTopInfo}>
+                      <ThemedText style={styles.productCode}>{item.codproduto}</ThemedText>
+                      <ThemedText 
+                        style={styles.productName}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {item.descricao.length > 20 && !isItemExpanded(item.id) 
+                          ? `${item.descricao.substring(0, 20)}...` 
+                          : item.descricao}
+                      </ThemedText>
+                    </View>
+                    <MaterialCommunityIcons 
+                      name={isItemExpanded(item.id) ? "chevron-up" : "chevron-down"} 
+                      size={18} 
+                      color="#666" 
+                    />
+                  </View>
+                  
+                  {isItemExpanded(item.id) && item.descricao.length > 20 && (
+                    <ThemedText style={styles.expandedDescription}>
+                      {item.descricao}
+                    </ThemedText>
+                  )}
+                  
+                  <View style={styles.productDetails}>
+                    <View style={styles.detailItem}>
+                      <ThemedText style={styles.detailLabel}>Preço:</ThemedText>
+                      <ThemedText style={styles.detailValue}>
+                        {formatCurrency(item.preco, item.moeda)}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <ThemedText style={styles.detailLabel}>IPI:</ThemedText>
+                      <ThemedText style={styles.detailValue}>
+                        {`${item.IPI || 'N/A'} ${item.IPI ? '%' : ''}`}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               ))}
             </ThemedView>
           ) : (
@@ -171,57 +215,78 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
+  scrollContentContainer: {
+    flexGrow: 1,
+  },
   contentContainer: {
-    padding: 20,
+    padding: 16,
+    paddingBottom: 80,
   },
   clientName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  tableContainer: {
+  productsContainer: {
+    gap: 12,
+  },
+  productCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    overflow: 'hidden',
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  tableHeader: {
+  productHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  headerCodigo: {
-    flex: 1,
-    fontWeight: 'bold',
-  },
-  headerDescricao: {
-    flex: 2,
-    fontWeight: 'bold',
-  },
-  headerPreco: {
-    flex: 1,
-    fontWeight: 'bold',
-    textAlign: 'right',
-  },
-  tableRow: {
+  productTopInfo: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  codigo: {
+    alignItems: 'center',
     flex: 1,
+    marginRight: 10,
+  },
+  productCode: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#229dc9',
+    marginRight: 8,
+  },
+  productName: {
+    fontSize: 14,
+    flex: 1,
+  },
+  expandedDescription: {
+    fontSize: 14,
+    marginBottom: 12,
+    color: '#333',
+    lineHeight: 20,
+  },
+  productNameExpanded: {
+    marginBottom: 12,
+  },
+  productDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 8,
+  },
+  detailItem: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 11,
     color: '#666',
   },
-  descricao: {
-    flex: 2,
-  },
-  preco: {
-    flex: 1,
-    textAlign: 'right',
+  detailValue: {
+    fontSize: 13,
     fontWeight: '500',
     color: '#229dc9',
   },

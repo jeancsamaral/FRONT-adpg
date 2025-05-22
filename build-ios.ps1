@@ -26,8 +26,8 @@ while ($attempt -le $MAX_ATTEMPTS) {
     # Run the build command specifically for iOS platform with production profile
     Write-Host "Running eas:build:ios npm script..."
     npm run eas:build:ios
-    2309Kona@
     # Check if the build was successful
+    # 2309Kona@
     if ($LASTEXITCODE -eq 0) {
         Write-Host "iOS build successful on attempt $attempt!"
         Write-Host "You can now access your iOS build from the Expo website:"

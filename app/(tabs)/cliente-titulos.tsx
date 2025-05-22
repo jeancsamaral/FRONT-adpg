@@ -67,8 +67,8 @@ export default function ClienteTitulosScreen() {
       // Get received payments
       const recebidos = await apiCaller.recebidosAppMethods.getRecebidosAppByCodcli(
         params.codcli as string,
-        1, // page
-        100, // limit
+        1, // page 
+        1000, // large limit to get essentially all records
         token
       );
       
@@ -76,7 +76,7 @@ export default function ClienteTitulosScreen() {
       const aReceber = await apiCaller.receberAppMethods.getReceberAppByCodcli(
         params.codcli as string,
         1, // page
-        100, // limit
+        1000, // large limit to get essentially all records
         token
       );
       
@@ -103,8 +103,13 @@ export default function ClienteTitulosScreen() {
         return sum + (isNaN(valor) ? 0 : valor);
       }, 0);
       
+      // Sort recebidos by payment date (most recent first)
+      const sortedRecebidos = [...recebidos].sort((a, b) => 
+        new Date(b.realizado).getTime() - new Date(a.realizado).getTime()
+      );
+      
       // Update state
-      setTitulosRecebidos(recebidos);
+      setTitulosRecebidos(sortedRecebidos);
       setTitulosAReceber(aReceber);
       setSummary({
         ultimaCompra: {

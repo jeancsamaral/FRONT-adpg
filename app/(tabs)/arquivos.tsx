@@ -271,78 +271,15 @@ export default function ArquivosScreen() {
                   style={styles.tableRow}
                   onPress={async () => {
                     try {
-                      // Get the full URL with protocol
                       const fullUrl = `https://${item.linkftp}`;
-
-                      // Get the file name from the URL and garantir extensão .pdf
-                      let fileName = item.arquivo || fullUrl.split('/').pop() || 'downloaded_file.pdf';
-                      if (!fileName.toLowerCase().endsWith('.pdf')) {
-                        fileName = fileName.replace(/\.[^/.]+$/, '') + '.pdf';
-                      }
-
-                      // Definir caminho para downloads com extensão PDF garantida
-                      const downloadDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-                      const fileUri = `${downloadDir}${fileName}`;
-
-                      // Mostrar indicador de loading
-                      Alert.alert(
-                        "Download em andamento",
-                        "Baixando o arquivo, por favor aguarde..."
-                      );
-
-                      // Download the file using the full URL with explicit PDF mime type
-                      const downloadResult = await FileSystem.downloadAsync(
-                        fullUrl,
-                        fileUri,
-                        {
-                          headers: {
-                            'Accept': 'application/pdf',
-                            'Content-Type': 'application/pdf'
-                          },
-                          cache: false
-                        }
-                      );
-
-                      if (downloadResult.status === 200) {
-                        // Verificar se o arquivo existe e não está vazio
-                        const fileInfo = await FileSystem.getInfoAsync(fileUri);
-                        
-                        if (!fileInfo.exists) {
-                          throw new Error('Arquivo não encontrado após download');
-                        }
-                        
-                        if (Platform.OS === 'ios') {
-                          // No iOS, compartilhar o arquivo
-                          if (await Sharing.isAvailableAsync()) {
-                            await Sharing.shareAsync(fileUri, {
-                              UTI: 'com.adobe.pdf',
-                              mimeType: 'application/pdf'
-                            });
-                          } else {
-                            // Tentar abrir diretamente se compartilhamento não estiver disponível
-                            await Linking.openURL(fileUri);
-                          }
-                        } else {
-                          // No Android, abrir o arquivo com app padrão de PDF
-                          const contentUri = await FileSystem.getContentUriAsync(fileUri);
-                          await Linking.openURL(contentUri);
-                        }
+                      if (await Linking.canOpenURL(fullUrl)) {
+                        await Linking.openURL(fullUrl);
                       } else {
-                        Alert.alert(
-                          "Erro no Download",
-                          `Falha ao baixar o arquivo. Status: ${downloadResult.status}`,
-                          [{ text: "Ok" }]
-                        );
+                        Alert.alert("Erro", "Não foi possível abrir o link.");
                       }
                     } catch (error) {
-                      console.error('Error handling file:', error);
-                      Alert.alert(
-                        "Erro",
-                        "Ocorreu um erro ao processar o arquivo. Certifique-se que o arquivo está disponível e é um PDF válido.",
-                        [
-                          { text: "Ok", style: "cancel" }
-                        ]
-                      );
+                      console.error('Error opening link:', error);
+                      Alert.alert("Erro", "Ocorreu um erro ao tentar abrir o link.");
                     }
                   }}
                 >
@@ -373,7 +310,92 @@ export default function ArquivosScreen() {
                   </View>
 
                   <View style={styles.actionIcons}>
-                    <MaterialCommunityIcons name="download" size={20} color="#229dc9" />
+                    <TouchableOpacity
+                      onPress={async () => {
+                        try {
+                          // Get the full URL with protocol
+                          const fullUrl = `https://${item.linkftp}`;
+
+                          // Get the file name from the URL and garantir extensão .pdf
+                          let fileName = item.arquivo || fullUrl.split('/').pop() || 'downloaded_file.pdf';
+                          if (!fileName.toLowerCase().endsWith('.pdf')) {
+                            fileName = fileName.replace(/\.[^/.]+$/, '') + '.pdf';
+                          }
+
+                          // Definir caminho para downloads com extensão PDF garantida
+                          const downloadDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+                          const fileUri = `${downloadDir}${fileName}`;
+
+                          // Mostrar indicador de loading
+                          Alert.alert(
+                            "Download em andamento",
+                            "Baixando o arquivo, por favor aguarde..."
+                          );
+
+                          // Download the file using the full URL with explicit PDF mime type
+                          const downloadResult = await FileSystem.downloadAsync(
+                            fullUrl,
+                            fileUri,
+                            {
+                              headers: {
+                                'Accept': 'application/pdf',
+                                'Content-Type': 'application/pdf'
+                              },
+                              cache: false
+                            }
+                          );
+
+                          if (downloadResult.status === 200) {
+                            // Verificar se o arquivo existe e não está vazio
+                            const fileInfo = await FileSystem.getInfoAsync(fileUri);
+                            
+                            if (!fileInfo.exists) { // Check if 'size' property exists before accessing
+                              throw new Error('Arquivo não encontrado após download');
+                            }
+                            // Check if 'size' property exists on fileInfo and if it's 0.
+                            // FileInfo type from expo-file-system doesn't always guarantee 'size'.
+                            // We cast to 'any' for a pragmatic check, but ensure 'exists' is checked first.
+                            if ((fileInfo as any).size === 0) {
+                                throw new Error('Arquivo vazio ou corrompido');
+                            }
+                            
+                            if (Platform.OS === 'ios') {
+                              // No iOS, compartilhar o arquivo
+                              if (await Sharing.isAvailableAsync()) {
+                                await Sharing.shareAsync(fileUri, {
+                                  UTI: 'com.adobe.pdf',
+                                  mimeType: 'application/pdf'
+                                });
+                              } else {
+                                // Tentar abrir diretamente se compartilhamento não estiver disponível
+                                await Linking.openURL(fileUri);
+                              }
+                            } else {
+                              // No Android, abrir o arquivo com app padrão de PDF
+                              const contentUri = await FileSystem.getContentUriAsync(fileUri);
+                              await Linking.openURL(contentUri);
+                            }
+                          } else {
+                            Alert.alert(
+                              "Erro no Download",
+                              `Falha ao baixar o arquivo. Status: ${downloadResult.status}`,
+                              [{ text: "Ok" }]
+                            );
+                          }
+                        } catch (error) {
+                          console.error('Error handling file:', error);
+                          Alert.alert(
+                            "Erro",
+                            "Ocorreu um erro ao processar o arquivo. Certifique-se que o arquivo está disponível e é um PDF válido.",
+                            [
+                              { text: "Ok", style: "cancel" }
+                            ]
+                          );
+                        }
+                      }}
+                    >
+                      <MaterialCommunityIcons name="download" size={24} color="#229dc9" />
+                    </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
               ))

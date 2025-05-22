@@ -109,9 +109,14 @@ export default function ClienteVendasScreen() {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
     }).format(value);
+  };
+
+  // Format quantity with comma as decimal separator
+  const formatQuantity = (value: number) => {
+    return value.toString().replace('.', ',');
   };
 
   // Format date
@@ -199,7 +204,7 @@ export default function ClienteVendasScreen() {
                           <View style={styles.produtoDetails}>
                             <View style={styles.produtoDetail}>
                               <ThemedText style={styles.detailLabel}>Qtd:</ThemedText>
-                              <ThemedText style={styles.detailValue}>{item.quantidade}</ThemedText>
+                              <ThemedText style={styles.detailValue}>{formatQuantity(item.quantidade)}</ThemedText>
                             </View>
                             <View style={styles.produtoDetail}>
                               <ThemedText style={styles.detailLabel}>Valor:</ThemedText>
