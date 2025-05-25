@@ -53,17 +53,20 @@ interface User {
   excluido: string;
   registro: number;
   login?: string; // Ensure login is a string
+  isAdmin?: boolean; // Add isAdmin property
 }
 
-// Define a new type for display purposes
-interface DisplayUser extends Omit<UsuariosApp & UsuarioAuth, 'login'> {
+// Define a new type for display purposes - excluding login and isAdmin from the original types
+interface DisplayUser extends Omit<UsuariosApp & Omit<UsuarioAuth, 'login' | 'isAdmin'>, 'login'> {
   login?: string; // login as a string for display
+  isAdmin?: boolean; // isAdmin property for admin status
 }
 
 export default function UsuariosScreen() {
   const router = useRouter();
   const { token, loading: authLoading } = useAuthCheck();
   const [users, setUsers] = useState<DisplayUser[]>([]);
+  const [authUsers, setAuthUsers] = useState<UsuarioAuth[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<DisplayUser | undefined>(undefined);
   const [searchText, setSearchText] = useState('');
@@ -76,6 +79,9 @@ export default function UsuariosScreen() {
     inativo: true,
   });
   const [initialLoading, setInitialLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'regular' | 'new'>('regular');
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{id: number, name: string, codusr?: number} | null>(null);
 
   const { user } = useAuth();
 
@@ -91,6 +97,7 @@ export default function UsuariosScreen() {
   // Effect to fetch data on initial load or token change
   useEffect(() => {
     fetchUsers();
+    fetchAuthUsers();
   }, [token]); // Fetch only when token changes (initial load)
 
   const fetchUsers = async () => {
@@ -106,7 +113,6 @@ export default function UsuariosScreen() {
       return;
     }
 
-    console.log('Fetching all users...');
     setInitialLoading(true); // Use initialLoading for the single fetch
     try {
       // Fetch all users (API might ignore pagination params)
@@ -122,12 +128,13 @@ export default function UsuariosScreen() {
         token
       );
 
+      console.log('Fetched users!!!:', response.users);
+
       if (Array.isArray(response.users)) {
          // Filter duplicates just in case backend sends them
          const uniqueUsers = response.users.filter((user: UsuariosApp, index: number, self: UsuariosApp[]) =>
            index === self.findIndex((t: UsuariosApp) => t.codusr === user.codusr)
          );
-         console.log('Fetched unique users:', uniqueUsers.length);
          setUsers(uniqueUsers); // Set the full list
       } else {
         console.error("Expected an array but got:", response.users);
@@ -143,15 +150,53 @@ export default function UsuariosScreen() {
     }
   };
 
-  const handleCreateUser = async (userData: Partial<UsuarioAuth>) => {
+  const fetchAuthUsers = async () => {
+    if (!token || !user) {
+      return;
+    }
+
+    if (!user.isAdmin) {
+      return;
+    }
+
+    try {
+      const response = await apiCaller.authMethods.getAllAuthUsers(token);
+      console.log('Fetched auth users!!!:', response);
+      if (Array.isArray(response)) {
+        setAuthUsers(response);
+      } else {
+        console.error("Expected an array of auth users but got:", response.users);
+        setAuthUsers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching auth users:', error);
+      setAuthUsers([]);
+    }
+  };
+
+  const handleCreateUser = async (userData: any) => {
     setIsEditing(false);
     // setPage(1);
-    fetchUsers(); // Refetch the full list after creation
-    setIsEditing(false);
+    const payloadData ={
+      nome: userData.nome,
+      login: userData.login,
+      password: userData.senha,
+      isAdmin: userData.isAdmin,
+      inativo: 'N',
+      excluido: 'N',
+    }
+    try {
+      await apiCaller.authMethods.registerUser(payloadData as Partial<UsuarioAuth>, token || '');
+      fetchUsers(); // Refetch the full list after creation
+      fetchAuthUsers(); // Fetch the auth users too
+      setIsEditing(false);
+    } catch (error) { 
+      console.error('Error creating user:', error);
+      Alert.alert('Erro', 'Não foi possível criar o usuário.');
+    }
   };
 
   const handleUpdateUser = async (formData: { codusr: number, nome: string; senha?: string; login: string; /* add other relevant fields */ }) => {
-    console.log('Updating user:', formData);
     await apiCaller.userMethods.updateUserAuth(formData.codusr.toString(), formData, token || '');
     // setPage(1);
     fetchUsers(); // Refetch the full list after update
@@ -159,7 +204,8 @@ export default function UsuariosScreen() {
     setSelectedUser(undefined);
   };
 
-  const handleDeleteUser = async (codusr: number) => {
+  const handleDeleteUser = async (id: number) => {
+    console.log('handleDeleteUser called with id:', id);
     Alert.alert(
       'Confirmar Exclusão',
       'Tem certeza que deseja excluir este usuário?',
@@ -170,9 +216,12 @@ export default function UsuariosScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Attempting to delete user with id:', id);
+              await apiCaller.authMethods.deleteUser(id, token || '');
               Alert.alert('Sucesso', 'Usuário excluído.');
               // setPage(1);
               fetchUsers(); // Refetch the full list after deletion
+              fetchAuthUsers(); // Also refresh the auth users list
             } catch (error) {
               console.error('Error deleting user:', error);
               Alert.alert('Erro', 'Não foi possível excluir o usuário.');
@@ -185,6 +234,11 @@ export default function UsuariosScreen() {
 
   // Unified submit handler for UserForm
   const handleSubmit = async (formData: Partial<User & { senha?: string }>) => {
+    if (!user?.isAdmin) {
+      Alert.alert('Acesso Negado', 'Apenas administradores podem criar ou editar usuários.');
+      return;
+    }
+    
     if (selectedUser) {
       if (formData.nome && formData.login && selectedUser.codusr) {
         await handleUpdateUser({
@@ -233,6 +287,35 @@ export default function UsuariosScreen() {
   if (initialLoading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
+
+  const handleConfirmDelete = async () => {
+    if (userToDelete) {
+      try {
+        
+        if (activeTab === 'regular') {
+          // For regular users, use deleteUserByCoduser method with codusr
+          if (userToDelete.codusr) {
+            await apiCaller.authMethods.deleteUserByCoduser(userToDelete.codusr.toString(), token || '');
+          } else {
+            Alert.alert('Erro', 'Código de usuário não encontrado.');
+            return;
+          }
+        } else {
+          // For auth users, use deleteUser method with id
+          await apiCaller.authMethods.deleteUser(userToDelete.id, token || '');
+        }
+        
+        fetchUsers();
+        fetchAuthUsers();
+        setIsDeleteModalVisible(false);
+        setUserToDelete(null);
+        Alert.alert('Sucesso', 'Usuário excluído com sucesso.');
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        Alert.alert('Erro', 'Não foi possível excluir o usuário.');
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -304,63 +387,167 @@ export default function UsuariosScreen() {
                 </View>
               )}
 
-              <TouchableOpacity 
-                style={styles.createButton}
-                onPress={() => setIsEditing(true)}
-              >
-                <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
-                <ThemedText style={styles.buttonText}>Novo Usuário</ThemedText>
-              </TouchableOpacity>
-
-              <ThemedView style={styles.table}>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((item) => (
-                    <ThemedView key={item.codusr} style={styles.tableRow}>
-                      <ThemedView style={styles.rowHeader}>
-                        <ThemedText style={styles.codigo}>{item.codusr}</ThemedText>
-                        <ThemedText style={styles.nome}>{item.nome}</ThemedText>
-                      </ThemedView>
-
-                      <ThemedView style={styles.rowContent}>
-                        <ThemedView style={styles.cell}>
-                          <ThemedText style={styles.label}>Supervisor</ThemedText>
-                          <ThemedText style={styles.value}>{item.supervisor}</ThemedText>
-                        </ThemedView>
-                        <ThemedView style={styles.cell}>
-                          <ThemedText style={styles.label}>Status</ThemedText>
-                          <ThemedText style={styles.value}>
-                            {item.inativo === 'N' ? 'Ativo' : 'Inativo'}
-                          </ThemedText>
-                        </ThemedView>
-                      </ThemedView>
-
-                      <ThemedView style={styles.actionIcons}>
-                        <TouchableOpacity onPress={() => {
-                          setSelectedUser(users.find(u => u.codusr === item.codusr));
-                          setIsEditing(true);
-                        }}>
-                          <Ionicons name="create-outline" size={20} color="#075eec" />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          onPress={() => handleDeleteUser(item.codusr)}
-                          style={styles.deleteButton}
-                        >
-                          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                        </TouchableOpacity>
-                      </ThemedView>
-                    </ThemedView>
-                  ))
-                ) : (
-                  <View style={styles.emptyContainer}>
-                     <MaterialCommunityIcons name="account-search-outline" size={48} color="#ccc" />
-                     <ThemedText style={styles.emptyText}>Nenhum usuário encontrado com os filtros atuais.</ThemedText>
+              {/* User Tabs */}
+              <View style={styles.tabContainer}>
+                <TouchableOpacity 
+                  style={[styles.tab, activeTab === 'regular' && styles.activeTab]}
+                  onPress={() => setActiveTab('regular')}
+                >
+                  <ThemedText style={[styles.tabText, activeTab === 'regular' && styles.activeTabText]}>
+                    Usuários Registrados
+                  </ThemedText>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.tab, activeTab === 'new' && styles.activeTab]}
+                  onPress={() => setActiveTab('new')}
+                >
+                  <View style={styles.tabContent}>
+                    <ThemedText style={[styles.tabText, activeTab === 'new' && styles.activeTabText]}>
+                      Usuário não vendedores
+                    </ThemedText>
                   </View>
-                )}
-              </ThemedView>
+                </TouchableOpacity>
+              </View>
+
+              {user?.isAdmin && activeTab === 'regular' && (
+                <TouchableOpacity 
+                  style={styles.createButton}
+                  onPress={() => setIsEditing(true)}
+                >
+                  <MaterialCommunityIcons name="plus-circle" size={24} color="#fff" />
+                  <ThemedText style={styles.buttonText}>Novo Usuário</ThemedText>
+                </TouchableOpacity>
+              )}
+
+              {/* Regular Users Section */}
+              {activeTab === 'regular' && (
+                <ThemedView style={styles.table}>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((item) => (
+                      <ThemedView key={item.codusr} style={styles.tableRow}>
+                        <ThemedView style={styles.rowHeader}>
+                          <ThemedText style={styles.codigo}>{item.codusr}</ThemedText>
+                          <ThemedText style={styles.nome}>{item.nome}</ThemedText>
+                        </ThemedView>
+
+                        <ThemedView style={styles.rowContent}>
+                          <ThemedView style={styles.cell}>
+                            <ThemedText style={styles.label}>Supervisor</ThemedText>
+                            <ThemedText style={styles.value}>
+                              {item.supervisor === 'true' || item.supervisor === 'S' ? 'Sim' : 'Não'}
+                            </ThemedText>
+                          </ThemedView>
+                          <ThemedView style={styles.cell}>
+                            <ThemedText style={styles.label}>Status</ThemedText>
+                            <ThemedText style={[
+                              styles.value,
+                              (item.inativo === 'N' || item.inativo === 'NAO' || item.inativo === 'NÃO') ? styles.activeStatus : styles.inactiveStatus
+                            ]}>
+                              {(item.inativo === 'N' || item.inativo === 'NAO' || item.inativo === 'NÃO') ? 'Ativo' : 'Inativo'}
+                            </ThemedText>
+                          </ThemedView>
+                        </ThemedView>
+
+                        <ThemedView style={styles.actionIcons}>
+                          {user?.isAdmin && (
+                            <>
+                              <TouchableOpacity onPress={() => {
+                                setSelectedUser(users.find(u => u.codusr === item.codusr));
+                                setIsEditing(true);
+                              }}>
+                                <Ionicons name="create-outline" size={20} color="#075eec" />
+                              </TouchableOpacity>
+                              <TouchableOpacity 
+                                onPress={() => {
+                                  console.log('Delete button pressed for user:', item.id);
+                                  setIsDeleteModalVisible(true);
+                                  setUserToDelete({id: item.id, name: item.nome, codusr: item.codusr});
+                                }}
+                                style={styles.deleteButton}
+                              >
+                                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                              </TouchableOpacity>
+                            </>
+                          )}
+                        </ThemedView>
+                      </ThemedView>
+                    ))
+                  ) : (
+                    <View style={styles.emptyContainer}>
+                      <MaterialCommunityIcons name="account-search-outline" size={48} color="#ccc" />
+                      <ThemedText style={styles.emptyText}>Nenhum usuário encontrado com os filtros atuais.</ThemedText>
+                    </View>
+                  )}
+                </ThemedView>
+              )}
+
+              {/* Auth Users Section */}
+              {activeTab === 'new' && (
+                <View>
+                  <View style={styles.sectionHeader}>
+                    <ThemedText style={styles.sectionTitle}>Usuário não vendedores</ThemedText>
+                    <TouchableOpacity onPress={fetchAuthUsers} style={styles.refreshButton}>
+                      <MaterialCommunityIcons name="refresh" size={20} color="#229dc9" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <ThemedView style={styles.table}>
+                    {authUsers.length > 0 ? (
+                      authUsers.map((authUser) => (
+                        <ThemedView key={authUser.id} style={[styles.tableRow, styles.authUserRow]}>
+                          <ThemedView style={styles.rowHeader}>
+                            <MaterialCommunityIcons name="account-plus" size={20} color="#229dc9" />
+                            <ThemedText style={styles.nome}>{authUser.nome}</ThemedText>
+                            {authUser.isAdmin && (
+                              <View style={styles.adminBadge}>
+                                <ThemedText style={styles.adminBadgeText}>Admin</ThemedText>
+                              </View>
+                            )}
+                          </ThemedView>
+
+                          <ThemedView style={styles.rowContent}>
+                            <ThemedView style={styles.cell}>
+                              <ThemedText style={styles.label}>Login</ThemedText>
+                              <ThemedText style={styles.value}>{authUser.login}</ThemedText>
+                            </ThemedView>
+                            <ThemedView style={styles.cell}>
+                              <ThemedText style={styles.label}>Data de Criação</ThemedText>
+                              <ThemedText style={styles.value}>
+                                {authUser.createdAt ? new Date(authUser.createdAt).toLocaleDateString('pt-BR') : 'N/A'}
+                              </ThemedText>
+                            </ThemedView>
+                          </ThemedView>
+
+                          <ThemedView style={styles.actionIcons}>
+                            {user?.isAdmin && (
+                              <TouchableOpacity 
+                                onPress={() => {
+                                  console.log('Delete button pressed for user:', authUser.id);
+                                  setIsDeleteModalVisible(true);
+                                  setUserToDelete({id: authUser.id, name: authUser.nome});
+                                }}
+                                style={styles.deleteButton}
+                              >
+                                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                              </TouchableOpacity>
+                            )}
+                          </ThemedView>
+                        </ThemedView>
+                      ))
+                    ) : (
+                      <View style={styles.emptyContainer}>
+                        <MaterialCommunityIcons name="account-plus" size={48} color="#ccc" />
+                        <ThemedText style={styles.emptyText}>Nenhum usuário não vendedor encontrado.</ThemedText>
+                      </View>
+                    )}
+                  </ThemedView>
+                </View>
+              )}
             </>
           ) : (
             <UserForm
-              user={selectedUser as User}
+              user={selectedUser}
               onSubmit={handleSubmit}
               onCancel={() => {
                 setIsEditing(false);
@@ -370,6 +557,39 @@ export default function UsuariosScreen() {
           )}
         </ThemedView>
       </ScrollView>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalVisible && userToDelete && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <ThemedText style={styles.modalTitle}>Confirmar Exclusão</ThemedText>
+            <ThemedText style={styles.modalText}>
+              Tem certeza que deseja excluir o usuário {userToDelete.name}?
+            </ThemedText>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelModalButton]} 
+                onPress={() => {
+                  setIsDeleteModalVisible(false);
+                  setUserToDelete(null);
+                }}
+              >
+                <ThemedText style={styles.cancelButtonText}>Cancelar</ThemedText>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.deleteModalButton]} 
+                onPress={() => {
+                  console.log('Delete button in modal pressed');
+                  handleConfirmDelete();
+                }}
+              >
+                <ThemedText style={styles.modalButtonText}>Excluir</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -594,6 +814,147 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
+  },
+  authUsersSection: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  refreshButton: {
+    padding: 8,
+  },
+  authUserRow: {
+    backgroundColor: '#f0f7fa',
+    borderLeftWidth: 3,
+    borderLeftColor: '#229dc9',
+  },
+  adminBadge: {
+    backgroundColor: '#229dc9',
+    padding: 4,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  adminBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  tab: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  activeTab: {
+    backgroundColor: '#229dc9',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    backgroundColor: '#ff3b30',
+    borderRadius: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    marginLeft: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modal: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  modalButton: {
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  cancelModalButton: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  deleteModalButton: {
+    backgroundColor: '#FF3B30',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
     textAlign: 'center',
   },
 });

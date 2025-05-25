@@ -181,7 +181,7 @@ export default function ClienteVendasScreen() {
                     <ThemedText style={styles.notaDate}>Emissão: {formatDate(notaItem.emissao)}</ThemedText>
                   </View>
                   <View style={styles.notaValue}>
-                    <ThemedText style={styles.notaValueText}>{formatCurrency(notaItem.totalnota)}</ThemedText>
+                    <ThemedText style={styles.notaValueText} numberOfLines={1}>{formatCurrency(notaItem.totalnota)}</ThemedText>
                     <MaterialCommunityIcons 
                       name={expandedNota === notaItem.codvenda.toString() ? "chevron-up" : "chevron-down"} 
                       size={24} 
@@ -208,11 +208,11 @@ export default function ClienteVendasScreen() {
                             </View>
                             <View style={styles.produtoDetail}>
                               <ThemedText style={styles.detailLabel}>Valor:</ThemedText>
-                              <ThemedText style={styles.detailValue}>{formatCurrency(parseFloat(item.valor))}</ThemedText>
+                              <ThemedText style={styles.detailValueMoney} numberOfLines={1}>{formatCurrency(parseFloat(item.valor))}</ThemedText>
                             </View>
                             <View style={styles.produtoDetail}>
                               <ThemedText style={styles.detailLabel}>Total:</ThemedText>
-                              <ThemedText style={styles.detailValue}>{formatCurrency(parseFloat(item.total))}</ThemedText>
+                              <ThemedText style={styles.detailValueMoney} numberOfLines={1}>{formatCurrency(parseFloat(item.total))}</ThemedText>
                             </View>
                           </View>
                         </View>
@@ -301,12 +301,15 @@ const styles = StyleSheet.create({
   notaValue: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
+    minWidth: 0,
   },
   notaValueText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#229dc9',
     marginRight: 5,
+    flexShrink: 1,
   },
   produtosContainer: {
     padding: 15,
@@ -339,9 +342,12 @@ const styles = StyleSheet.create({
   produtoDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'nowrap',
   },
   produtoDetail: {
     flex: 1,
+    marginHorizontal: 2,
+    minWidth: 0,
   },
   detailLabel: {
     fontSize: 12,
@@ -350,6 +356,11 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  detailValueMoney: {
+    fontSize: 12,
+    fontWeight: '500',
+    flexShrink: 1,
   },
   noProdutos: {
     textAlign: 'center',

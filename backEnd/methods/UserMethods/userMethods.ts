@@ -3,7 +3,7 @@ import { useAxios } from "../../utils/useAxios";
 import { mockedUsers } from "../../mocks/";
 import { environment } from "../../config";
 
-export async function createUser(user: UsuariosApp, token: string) {
+export async function createUser(user: Partial<UsuariosApp>, token: string) {
   if (environment.appState === "OFFLINE") {
     return user;
   }

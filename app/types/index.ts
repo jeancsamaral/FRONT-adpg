@@ -11,6 +11,7 @@ export interface User {
   coddir?: string;
   excluido: string;
   registro: number;
+  isAdmin?: boolean;
 }
 
 export interface AuthResponse {

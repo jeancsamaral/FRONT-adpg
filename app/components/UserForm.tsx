@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput, StyleSheet, Switch } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { ThemedText } from './ThemedText';
-import { User } from '../types';
+import { User as AppUser } from '../types';
+
+// Define a local User type that extends AppUser but makes login optional
+interface User extends Omit<AppUser, 'login'> {
+  login?: string;
+  isAdmin?: boolean;
+}
 
 interface UserFormProps {
   user?: User;
@@ -17,6 +23,7 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
     senha: '',
     supervisor: user?.supervisor || '',
     inativo: user?.inativo || 'N',
+    isAdmin: user?.isAdmin || false,
   });
 
   return (
@@ -53,6 +60,16 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
           placeholder="Digite a senha"
           placeholderTextColor="#666"
           secureTextEntry
+        />
+      </View>
+
+      <View style={styles.switchContainer}>
+        <ThemedText style={styles.label}>Administrador</ThemedText>
+        <Switch
+          value={formData.isAdmin}
+          onValueChange={(value) => setFormData({ ...formData, isAdmin: value })}
+          trackColor={{ false: "#767577", true: "#229dc9" }}
+          thumbColor={formData.isAdmin ? "#fff" : "#f4f3f4"}
         />
       </View>
 
@@ -103,6 +120,12 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: '#333',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   buttonContainer: {
     flexDirection: 'row',

@@ -310,6 +310,7 @@ export default function ArquivosScreen() {
                   </View>
 
                   <View style={styles.actionIcons}>
+                    {/* Download button commented out
                     <TouchableOpacity
                       onPress={async () => {
                         try {
@@ -396,6 +397,7 @@ export default function ArquivosScreen() {
                     >
                       <MaterialCommunityIcons name="download" size={24} color="#229dc9" />
                     </TouchableOpacity>
+                    */}
                   </View>
                 </TouchableOpacity>
               ))

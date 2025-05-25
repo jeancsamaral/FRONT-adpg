@@ -224,7 +224,9 @@ export interface UsuarioAuth {
     password: string;
     isAdmin: boolean;
     profileAccess: string[];
-} 
+    createdAt?: string;
+    updatedAt?: string;
+}
 
 export interface Arquivos_FISPQ {
     id: number;

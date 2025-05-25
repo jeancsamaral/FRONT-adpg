@@ -121,9 +121,12 @@ export default function PrecosScreen() {
                     10,
                     token
                 );
+                console.log("response!!",response);
             } else {
+                console.log("getAllRegionalPrices",pageNumber, 10, token);
                 response = await apiCaller.regionalPricesMethods.getAllRegionalPrices(pageNumber, 10, token);
                 response = response.regionalPrices;
+                console.log("response2!!",response);
             }
             
             
