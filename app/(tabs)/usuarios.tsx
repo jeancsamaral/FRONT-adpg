@@ -82,6 +82,8 @@ export default function UsuariosScreen() {
   const [activeTab, setActiveTab] = useState<'regular' | 'new'>('regular');
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{id: number, name: string, codusr?: number} | null>(null);
+  const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const { user } = useAuth();
 
@@ -196,10 +198,24 @@ export default function UsuariosScreen() {
     }
   };
 
-  const handleUpdateUser = async (formData: { codusr: number, nome: string; senha?: string; login: string; /* add other relevant fields */ }) => {
-    await apiCaller.userMethods.updateUserAuth(formData.codusr.toString(), formData, token || '');
+  const handleUpdateUser = async (formData: { codusr: number, nome: string; senha?: string; login: string; isAdmin?: boolean; /* add other relevant fields */ }) => {
+    console.log('handleUpdateUser called with formData:', formData);
+    
+    // Prepare the update payload
+    const updatePayload = {
+      codusr: formData.codusr,
+      nome: formData.nome,
+      login: formData.login,
+      isAdmin: formData.isAdmin,
+      ...(formData.senha && { password: formData.senha }), // Note: API might expect 'password' instead of 'senha'
+    };
+    
+    console.log('Update payload:', updatePayload);
+    
+    await apiCaller.userMethods.updateUserAuth(formData.codusr.toString(), updatePayload, token || '');
     // setPage(1);
     fetchUsers(); // Refetch the full list after update
+    fetchAuthUsers(); // Also refresh auth users in case the user appears there
     setIsEditing(false);
     setSelectedUser(undefined);
   };
@@ -239,12 +255,15 @@ export default function UsuariosScreen() {
       return;
     }
     
+    console.log('handleSubmit called with formData:', formData);
+    
     if (selectedUser) {
       if (formData.nome && formData.login && selectedUser.codusr) {
         await handleUpdateUser({
           codusr: selectedUser.codusr,
           nome: formData.nome,
           login: formData.login,
+          isAdmin: formData.isAdmin,
           ...(formData.senha && { senha: formData.senha }),
         });
       } else {
@@ -291,28 +310,45 @@ export default function UsuariosScreen() {
   const handleConfirmDelete = async () => {
     if (userToDelete) {
       try {
+        // Create a timeout promise that rejects after 2 seconds
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Request timeout'));
+          }, 2000);
+        });
+
+        let deletePromise;
         
         if (activeTab === 'regular') {
           // For regular users, use deleteUserByCoduser method with codusr
           if (userToDelete.codusr) {
-            await apiCaller.authMethods.deleteUserByCoduser(userToDelete.codusr.toString(), token || '');
+            deletePromise = apiCaller.authMethods.deleteUserByCoduser(userToDelete.codusr.toString(), token || '');
           } else {
             Alert.alert('Erro', 'Código de usuário não encontrado.');
             return;
           }
         } else {
           // For auth users, use deleteUser method with id
-          await apiCaller.authMethods.deleteUser(userToDelete.id, token || '');
+          deletePromise = apiCaller.authMethods.deleteUser(userToDelete.id, token || '');
         }
+
+        // Race between the delete request and the timeout
+        await Promise.race([deletePromise, timeoutPromise]);
         
         fetchUsers();
         fetchAuthUsers();
         setIsDeleteModalVisible(false);
         setUserToDelete(null);
-        Alert.alert('Sucesso', 'Usuário excluído com sucesso.');
+        setErrorMessage('Usuário excluído com sucesso.');
+        setIsErrorModalVisible(true);
       } catch (error) {
         console.error('Error deleting user:', error);
-        Alert.alert('Erro', 'Não foi possível excluir o usuário.');
+        setIsDeleteModalVisible(false);
+        setUserToDelete(null);
+        
+        // Show error modal for any request failure (timeout, network error, server error, etc.)
+        setErrorMessage('Erro ao apagar - cheque se o usuário já foi deletado');
+        setIsErrorModalVisible(true);
       }
     }
   };
@@ -453,7 +489,17 @@ export default function UsuariosScreen() {
                           {user?.isAdmin && (
                             <>
                               <TouchableOpacity onPress={() => {
-                                setSelectedUser(users.find(u => u.codusr === item.codusr));
+                                const foundUser = users.find(u => u.codusr === item.codusr);
+                                if (foundUser) {
+                                  // Extract isAdmin from the nested login object if it exists
+                                  const userToEdit = {
+                                    ...foundUser,
+                                    login: (foundUser.login as any)?.login || '', // Extract login string from UsuarioAuth
+                                    isAdmin: (foundUser.login as any)?.isAdmin || false, // Extract isAdmin from UsuarioAuth
+                                  };
+                                  console.log('Setting selectedUser for edit:', userToEdit);
+                                  setSelectedUser(userToEdit);
+                                }
                                 setIsEditing(true);
                               }}>
                                 <Ionicons name="create-outline" size={20} color="#075eec" />
@@ -557,6 +603,31 @@ export default function UsuariosScreen() {
           )}
         </ThemedView>
       </ScrollView>
+
+      {/* Error/Success Modal */}
+      {isErrorModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <ThemedText style={styles.modalTitle}>
+              {errorMessage.includes('Sucesso') || errorMessage.includes('sucesso') ? 'Sucesso' : 'Erro'}
+            </ThemedText>
+            <ThemedText style={styles.modalText}>
+              {errorMessage}
+            </ThemedText>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.submitModalButton]} 
+                onPress={() => {
+                  setIsErrorModalVisible(false);
+                  setErrorMessage('');
+                }}
+              >
+                <ThemedText style={styles.modalButtonText}>OK</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalVisible && userToDelete && (
@@ -944,6 +1015,9 @@ const styles = StyleSheet.create({
   },
   deleteModalButton: {
     backgroundColor: '#FF3B30',
+  },
+  submitModalButton: {
+    backgroundColor: '#229dc9',
   },
   cancelButtonText: {
     fontSize: 16,

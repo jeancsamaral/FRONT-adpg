@@ -17,6 +17,8 @@ interface UserFormProps {
 }
 
 export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
+  console.log('UserForm received user:', user);
+  
   const [formData, setFormData] = useState<Partial<User>>({
     nome: user?.nome || '',
     login: user?.login || '',
@@ -25,6 +27,8 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
     inativo: user?.inativo || 'N',
     isAdmin: user?.isAdmin || false,
   });
+  
+  console.log('UserForm formData initialized:', formData);
 
   return (
     <View style={styles.container}>

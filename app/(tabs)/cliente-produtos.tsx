@@ -62,7 +62,8 @@ export default function ClienteProdutosScreen() {
 
   // Format currency
   const formatCurrency = (value: number, currency: string) => {
-    return `${value.toFixed(5)} ${currency}`;
+    console.log({value});
+    return `${value.toFixed(5).replace('.', ',')} ${currency}`;
   };
 
   const toggleItemExpand = (id: number) => {

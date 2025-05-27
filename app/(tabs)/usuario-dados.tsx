@@ -24,7 +24,8 @@ export default function UserDataScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { token, user } = useAuth();
-  const [userData, setUserData] = useState<UsuariosApp | null>(null);
+  const [userData, setUserData] = useState<UsuarioAuth | null>(null);
+  const [userBaseData, setUserBaseData] = useState<UsuariosApp | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,14 +44,18 @@ export default function UserDataScreen() {
     try {
       setLoading(true);
       const {user:userData,userAuth:userAuthData} = await apiCaller.userMethods.getUser(user?.id.toString() ?? '', token);
+      console.log({userData,userAuthData});
 
       // Find the current user by ID
       const currentUser = userAuthData;
+      if (userData) {
+        setUserBaseData(userData);
+      }
       if (currentUser) {
         setUserData(currentUser);
       } else {
         setUserData(userData); // Fallback to the first user
-      }
+      } 
     } catch (error) {
       console.error('Error fetching user data:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados do usuário.');
@@ -113,17 +118,17 @@ export default function UserDataScreen() {
                 </View>
                 <View style={styles.infoRow}>
                   <ThemedText style={styles.label}>Supervisor:</ThemedText>
-                  <ThemedText style={styles.value}>{userData.supervisor}</ThemedText>
+                  <ThemedText style={styles.value}>{userBaseData?.supervisor ?? 'Não'}</ThemedText>
                 </View>
                 {userData.login && (
                   <View style={styles.infoRow}>
                     <ThemedText style={styles.label}>Login:</ThemedText>
-                    <ThemedText style={styles.value}>{userData.login.login}</ThemedText>
+                    <ThemedText style={styles.value}>{userData.login}</ThemedText>
                   </View>
                 )}
               </View>
 
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 style={styles.editButton}
                 onPress={() => {
                   Alert.alert('Editar', 'Funcionalidade de edição será implementada em breve.');
@@ -131,15 +136,7 @@ export default function UserDataScreen() {
               >
                 <MaterialCommunityIcons name="pencil" size={20} color="#fff" />
                 <ThemedText style={styles.buttonText}>Editar Perfil</ThemedText>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.accessButton}
-                onPress={() => router.push('/(tabs)/perfis-acesso' as Href<string>)}
-              >
-                <MaterialCommunityIcons name="shield-account" size={20} color="#fff" />
-                <ThemedText style={styles.buttonText}>Perfis de Acesso</ThemedText>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </>
           ) : (
             <ThemedText style={styles.noDataText}>Nenhum dado de usuário encontrado.</ThemedText>
