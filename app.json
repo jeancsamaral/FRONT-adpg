@@ -4,8 +4,8 @@
     "slug": "adpg",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "edpg",
+    "icon": "./assets/images/LogoADPG.png",
+    "scheme": "adpgapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -15,13 +15,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.brunopimentelff.EDPG",
+      "deploymentTarget": "13.4",
+      "buildNumber": "22",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/LogoADPG.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.brunopimentelff.EDPG",

@@ -26,7 +26,8 @@
                                                      "buildType":  "app-bundle"
                                                  },
                                      "ios":  {
-                                                 "distribution":  "store"
+                                                 "distribution":  "store",
+                                                 "image":  "macos-sonoma-14.6-xcode-16.1"
                                              },
                                      "distribution":  "store",
                                      "autoIncrement":  true
@@ -35,5 +36,14 @@
     "cli":  {
                 "version":  "\u003e= 0.38.3",
                 "appVersionSource":  "remote"
-            }
+            },
+    "submit":  {
+                "production":  {
+                                "ios":  {
+                                                "appleId":  "vendas@adpg.com.br",
+                                                "ascAppId":  "6746138822",
+                                                "appleTeamId":  "4D5WX89VY7"
+                                            }
+                                }
+                }
 }
