@@ -38,12 +38,12 @@
                 "appVersionSource":  "remote"
             },
     "submit":  {
-                "production":  {
-                                "ios":  {
-                                                "appleId":  "vendas@adpg.com.br",
-                                                "ascAppId":  "6746138822",
-                                                "appleTeamId":  "4D5WX89VY7"
-                                            }
-                                }
-                }
+                   "production":  {
+                                      "ios":  {
+                                                  "appleId":  "vendas@adpg.com.br",
+                                                  "ascAppId":  "6746138822",
+                                                  "appleTeamId":  "4D5WX89VY7"
+                                              }
+                                  }
+               }
 }

@@ -11,7 +11,8 @@
     "test": "jest --watchAll",
     "lint": "expo lint",
     "eas:build": "eas build -p android --profile production",
-    "eas:build:ios": "eas build --platform ios"
+    "eas:build:ios": "eas build --platform ios",
+    "eas:ios:submit": "eas submit -p ios --latest"
   },
   "jest": {
     "preset": "jest-expo"

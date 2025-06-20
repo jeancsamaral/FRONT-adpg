@@ -4,7 +4,7 @@
     "slug": "adpg",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/images/LogoADPG.png",
+    "icon": "./assets/images/adpg-app-icon.png",
     "scheme": "adpgapp",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -23,7 +23,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/LogoADPG.png",
+        "foregroundImage": "./assets/images/adpg-app-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.brunopimentelff.EDPG",
