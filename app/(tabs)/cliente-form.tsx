@@ -13,21 +13,21 @@ export default function ClienteFormScreen() {
   const isEditing = params.isEditing === 'true';
 
   const [formData, setFormData] = useState({
-    codigo: params.codigo || '',
-    razaoSocial: params.razaoSocial || '',
-    cidade: params.cidade || '',
-    uf: params.uf || '',
-    telefone: params.telefone || '',
-    contato: params.contato || '',
-    email: params.email || '',
-    cnpj: params.cnpj || '',
-    inscricaoEstadual: params.inscricaoEstadual || '',
-    endereco: params.endereco || '',
-    bairro: params.bairro || '',
-    cep: params.cep || '',
-    celular: params.celular || '',
-    website: params.website || '',
-    observacoes: params.observacoes || '',
+    codigo: Array.isArray(params.codigo) ? params.codigo[0] || '' : params.codigo || '',
+    razaoSocial: Array.isArray(params.razaoSocial) ? params.razaoSocial[0] || '' : params.razaoSocial || '',
+    cidade: Array.isArray(params.cidade) ? params.cidade[0] || '' : params.cidade || '',
+    uf: Array.isArray(params.uf) ? params.uf[0] || '' : params.uf || '',
+    telefone: Array.isArray(params.telefone) ? params.telefone[0] || '' : params.telefone || '',
+    contato: Array.isArray(params.contato) ? params.contato[0] || '' : params.contato || '',
+    email: Array.isArray(params.email) ? params.email[0] || '' : params.email || '',
+    cnpj: Array.isArray(params.cnpj) ? params.cnpj[0] || '' : params.cnpj || '',
+    inscricaoEstadual: Array.isArray(params.inscricaoEstadual) ? params.inscricaoEstadual[0] || '' : params.inscricaoEstadual || '',
+    endereco: Array.isArray(params.endereco) ? params.endereco[0] || '' : params.endereco || '',
+    bairro: Array.isArray(params.bairro) ? params.bairro[0] || '' : params.bairro || '',
+    cep: Array.isArray(params.cep) ? params.cep[0] || '' : params.cep || '',
+    celular: Array.isArray(params.celular) ? params.celular[0] || '' : params.celular || '',
+    website: Array.isArray(params.website) ? params.website[0] || '' : params.website || '',
+    observacoes: Array.isArray(params.observacoes) ? params.observacoes[0] || '' : params.observacoes || '',
   });
 
   const handleSave = async () => {

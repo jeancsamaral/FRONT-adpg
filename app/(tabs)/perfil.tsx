@@ -23,7 +23,7 @@ interface MenuItem {
   icon: string;
   title: string;
   subtitle: string;
-  route: Href<string>;
+  route: Href;
   color?: string;
 }
 
@@ -32,31 +32,31 @@ const menuItems: MenuItem[] = [
     icon: "person-outline",
     title: "Dados do Usuário",
     subtitle: "Informações da conta",
-    route: "/(tabs)/usuario-dados" as Href<string>
+    route: "/(tabs)/usuario-dados"
   },
   {
     icon: "people-outline",
     title: "Gerenciar Usuários",
     subtitle: "Adicionar e gerenciar usuários do sistema",
-    route: "/(tabs)/usuarios" as Href<string>
+    route: "/(tabs)/usuarios"
   },
   // {
   //   icon: "shield-outline",
   //   title: "Perfis de Acesso",
   //   subtitle: "Gerenciar permissões de usuários",
-  //   route: "/(tabs)/perfis-acesso" as Href<string>
+  //   route: "/(tabs)/perfis-acesso"
   // },
   // {
   //   icon: "grid-outline",
   //   title: "Configurar Colunas",
   //   subtitle: "Visibilidade de dados por perfil",
-  //   route: "/(tabs)/config-colunas" as Href<string>
+  //   route: "/(tabs)/config-colunas"
   // },
   {
     icon: "log-out-outline",
     title: "Sair",
     subtitle: "Encerrar sessão",
-    route: "/login" as Href<string>,
+    route: "/login",
     color: "#FF3B30"
   }
 ];
@@ -115,7 +115,7 @@ export default function PerfilScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/(tabs)/' as Href<string>)}>
+        <TouchableOpacity onPress={() => router.replace('/(tabs)/')}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Configurações</Text>
@@ -174,25 +174,25 @@ export default function PerfilScreen() {
       <View style={styles.bottomNav}>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)' as Href<string>)}
+          onPress={() => router.push('/(tabs)')}
         >
           <Ionicons name="home-outline" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/clientes' as Href<string>)}
+          onPress={() => router.push('/(tabs)/clientes')}
         >
           <Ionicons name="people-outline" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/estoque' as Href<string>)}
+          onPress={() => router.push('/(tabs)/estoque')}
         >
           <Ionicons name="cube-outline" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/info' as Href<string>)}
+          onPress={() => router.push('/(tabs)/info')}
         >
           <Ionicons name="settings-outline" size={24} color="#000" />
         </TouchableOpacity>

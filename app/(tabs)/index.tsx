@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { useRouter } from 'expo-router';
+import { useAuthCheck } from '../hooks/useAuthCheck';
+import ApiCaller from '../../backEnd/apiCaller';
 
 const { width } = Dimensions.get('window');
+const apiCaller = new ApiCaller();
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { token, loading } = useAuthCheck();
+  
   const quickActions = [
     { icon: 'account-group', title: 'Clientes', route: '/(tabs)/clientes' },
     { icon: 'chart-line', title: 'Estoque', route: '/(tabs)/estoque' },
@@ -24,6 +29,22 @@ export default function HomeScreen() {
     { icon: 'file-document', title: 'Documentos', route: '/(tabs)/arquivos' },
     { icon: 'cog', title: 'Configurações', route: '/(tabs)/perfil' },
   ];
+
+  useEffect(() => {
+    const checkTokenAndLogout = async () => {
+      if (!loading && token) {
+        try {
+          await apiCaller.authMethods.checkToken(token);
+        } catch (error) {
+          console.error('Token validation failed:', error);
+          // Logout user by redirecting to login (useAuthCheck will handle the rest)
+          router.replace('/login');
+        }
+      }
+    };
+
+    checkTokenAndLogout();
+  }, [token, loading]);
 
   return (
     <SafeAreaView style={styles.container}>

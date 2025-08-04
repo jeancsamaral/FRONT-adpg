@@ -22,6 +22,14 @@ export async function registerUser(user: Partial<UsuarioAuth>, token: string) {
   return useAxios("/auth/register", token, user, "post");
 }
 
+export async function checkToken(token: string) {
+  if (environment.appState === "OFFLINE") {
+    return { valid: true, message: "Token is valid (offline mode)" };
+  }
+  console.log("checkToken: Validating token");
+  return useAxios("/check-token", token, null, "get");
+}
+
 export async function getAllAuthUsers(token: string) {
   if (environment.appState === "OFFLINE") {
     return { users: mockedUserAuths };

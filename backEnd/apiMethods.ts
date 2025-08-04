@@ -149,6 +149,11 @@ export class AuthMethods extends GroupedMethods {
         console.log('registerUser method needs to be implemented.', user, token);
         return Promise.resolve();
     }
+
+    checkToken(token: string): Promise<any> {
+        console.log('checkToken method needs to be implemented with token:', token);
+        return Promise.resolve({ valid: true });
+    }
 }
 
 export class NotasMethods extends GroupedMethods {
